@@ -1,6 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect, useRef } from 'react';
 import { DEFAULT_SPRITES } from '../utils/nyanRenderer';
+import { detectInitialLang, tFor } from '../i18n';
+
 
 export const AppContext = createContext();
 
@@ -19,7 +21,8 @@ const INITIAL_SETTINGS = {
   headDy: 0,
   customFrostingColor: '#ff66cc',
   customCrustColor: '#ffa659',
-  customSprinkleColor: '#ff007f'
+  customSprinkleColor: '#ff007f',
+  language: detectInitialLang()
 };
 
 export const AppProvider = ({ children }) => {
@@ -75,8 +78,44 @@ export const AppProvider = ({ children }) => {
   const initialData = loadSavedData() || {};
 
   // 1. Custom Parts Library (User-drawn pixel art parts)
-  // Structured as: { [partName]: { width: number, height: number, data: 2D array } }
-  const [customParts, setCustomParts] = useState(initialData.customParts || {});
+  // Structured as: { [partName]: { name: string, width: number, height: number, data: 2D array, package?: string } }
+  const [customParts, setCustomParts] = useState(() => {
+    const raw = initialData.customParts || {};
+    const upgraded = {};
+    Object.keys(raw).forEach((k) => {
+      upgraded[k] = {
+        ...raw[k],
+        package: raw[k].package || 'My Custom'
+      };
+    });
+    return upgraded;
+  });
+
+  // Loaded Packages state
+  const [loadedPackages, setLoadedPackages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nyan_studio_loaded_packages');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed.includes('Nyan Cat')) {
+          parsed.unshift('Nyan Cat');
+        }
+        return parsed;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return ['Nyan Cat'];
+  });
+
+  // Sync loadedPackages to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('nyan_studio_loaded_packages', JSON.stringify(loadedPackages));
+    } catch (e) {
+      console.error('Failed to save loaded packages:', e);
+    }
+  }, [loadedPackages]);
 
   // 2. Layers for Widescreen Drag & Drop Assembler
   // Structured as: Array of { id: string, partName: string, x: number, y: number, zIndex: number, visible: boolean }
@@ -145,7 +184,16 @@ export const AppProvider = ({ children }) => {
         .then((res) => res.json())
         .then((data) => {
           if (data) {
-            if (data.customParts) setCustomParts(data.customParts);
+            if (data.customParts) {
+              const upgraded = {};
+              Object.keys(data.customParts).forEach((k) => {
+                upgraded[k] = {
+                  ...data.customParts[k],
+                  package: data.customParts[k].package || 'My Custom'
+                };
+              });
+              setCustomParts(upgraded);
+            }
             if (data.layers) setLayers(data.layers);
             if (data.background) setBackground(data.background);
             if (data.bindings) setBindings(data.bindings);
@@ -192,13 +240,23 @@ export const AppProvider = ({ children }) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
+  const t = (key, vars) => tFor(settings.language, key, vars);
+
   // Add/Update a custom part
-  const saveCustomPart = (name, width, height, data) => {
+  const saveCustomPart = (name, width, height, data, packageName = 'My Custom') => {
     const key = name.trim().replace(/\s+/g, '_').toLowerCase();
+    const pkg = packageName.trim() || 'My Custom';
     setCustomParts((prev) => ({
       ...prev,
-      [key]: { name: name.trim(), width, height, data }
+      [key]: { name: name.trim(), width, height, data, package: pkg }
     }));
+    // Auto-load the package
+    setLoadedPackages((prev) => {
+      if (!prev.includes(pkg)) {
+        return [...prev, pkg];
+      }
+      return prev;
+    });
     return key;
   };
 
@@ -223,6 +281,56 @@ export const AppProvider = ({ children }) => {
 
     // Clean up any layers using this part
     setLayers((prev) => prev.filter((layer) => layer.partName !== key));
+  };
+
+  // Package Management Actions
+  const loadPackage = (packageName) => {
+    setLoadedPackages((prev) => {
+      if (!prev.includes(packageName)) {
+        return [...prev, packageName];
+      }
+      return prev;
+    });
+  };
+
+  const unloadPackage = (packageName) => {
+    if (packageName === 'Nyan Cat') return;
+    setLoadedPackages((prev) => prev.filter((p) => p !== packageName));
+  };
+
+  const deletePackage = (packageName) => {
+    if (packageName === 'Nyan Cat') return;
+
+    // 1. Unload package
+    setLoadedPackages((prev) => prev.filter((p) => p !== packageName));
+
+    // 2. Identify keys to delete
+    const keysToDelete = Object.keys(customParts).filter(
+      (key) => customParts[key].package === packageName
+    );
+
+    // 3. Delete from customParts
+    setCustomParts((prev) => {
+      const copy = { ...prev };
+      keysToDelete.forEach((key) => {
+        delete copy[key];
+      });
+      return copy;
+    });
+
+    // 4. Clean up bindings
+    setBindings((prev) => {
+      const nextBindings = { ...prev };
+      Object.keys(nextBindings).forEach((slot) => {
+        if (keysToDelete.includes(nextBindings[slot])) {
+          nextBindings[slot] = 'default';
+        }
+      });
+      return nextBindings;
+    });
+
+    // 5. Clean up layers
+    setLayers((prev) => prev.filter((layer) => !keysToDelete.includes(layer.partName)));
   };
 
   // Import default sprite into editor helper
@@ -251,6 +359,7 @@ export const AppProvider = ({ children }) => {
         visible: true
       }
     ]);
+    return newId;
   };
 
   // Update a single layer's property (x, y, zIndex, visible)
@@ -355,7 +464,7 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('nyan_studio_assembler_profiles', JSON.stringify(next));
       return next;
     });
-    setToastMessage('Đã lưu profile thành công!');
+    setToastMessage(t('toasts.profileSaved'));
     setTimeout(() => setToastMessage(''), 3000);
   };
 
@@ -390,7 +499,10 @@ export const AppProvider = ({ children }) => {
         const next = { ...prev };
         Object.keys(importedCustomParts).forEach((k) => {
           if (!next[k]) {
-            next[k] = importedCustomParts[k];
+            next[k] = {
+              ...importedCustomParts[k],
+              package: importedCustomParts[k].package || 'My Custom'
+            };
             mergedPartsCount++;
           }
         });
@@ -411,7 +523,7 @@ export const AppProvider = ({ children }) => {
         return next;
       });
 
-      setToastMessage(`Đã nạp thành công profile "${newProfile.name}"!`);
+      setToastMessage(t('toasts.profileImported', { name: newProfile.name }));
       setTimeout(() => setToastMessage(''), 3000);
       return { success: true, id: newId, mergedPartsCount };
     } catch (e) {
@@ -446,7 +558,7 @@ export const AppProvider = ({ children }) => {
 
   // Reset entire project to default vanilla state
   const resetEntireProject = () => {
-    if (window.confirm('Khôi phục toàn bộ studio về dự án mẫu mặc định?')) {
+    if (window.confirm(t('dialogs.resetConfirm'))) {
       fetch('/defaultProject.json')
         .then((res) => res.json())
         .then((data) => {
@@ -457,7 +569,7 @@ export const AppProvider = ({ children }) => {
             if (data.bindings) setBindings(data.bindings);
             if (data.settings) setSettings({ ...INITIAL_SETTINGS, ...data.settings });
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-            alert('Đã khôi phục về dự án mẫu Cyberpunk Neon thành công!');
+            alert(t('dialogs.resetSuccess'));
           }
         })
         .catch((err) => {
@@ -479,7 +591,7 @@ export const AppProvider = ({ children }) => {
           });
           setSettings(INITIAL_SETTINGS);
           localStorage.removeItem(LOCAL_STORAGE_KEY);
-          alert('Đã xóa sạch toàn bộ dự án về trạng thái trống.');
+          alert(t('dialogs.resetFailEmpty'));
         });
     }
   };
@@ -502,7 +614,16 @@ export const AppProvider = ({ children }) => {
   const importProjectJson = (jsonString) => {
     try {
       const parsed = JSON.parse(jsonString);
-      if (parsed.customParts) setCustomParts(parsed.customParts);
+      if (parsed.customParts) {
+        const upgraded = {};
+        Object.keys(parsed.customParts).forEach((k) => {
+          upgraded[k] = {
+            ...parsed.customParts[k],
+            package: parsed.customParts[k].package || 'My Custom'
+          };
+        });
+        setCustomParts(upgraded);
+      }
       if (parsed.layers) setLayers(parsed.layers);
       if (parsed.background) setBackground(parsed.background);
       if (parsed.bindings) setBindings(parsed.bindings);
@@ -647,6 +768,7 @@ export const AppProvider = ({ children }) => {
       value={{
         customParts,
         layers,
+        setLayers,
         background,
         bindings,
         settings,
@@ -654,6 +776,7 @@ export const AppProvider = ({ children }) => {
         setToastMessage,
         liveEditingPartRef,
         updateSetting,
+        t,
         saveCustomPart,
         deleteCustomPart,
         getDefaultSpriteData,
@@ -678,7 +801,11 @@ export const AppProvider = ({ children }) => {
         deleteProfile,
         importIndividualProfile,
         closeActiveProfile,
-        checkHasUnsavedChanges
+        checkHasUnsavedChanges,
+        loadedPackages,
+        loadPackage,
+        unloadPackage,
+        deletePackage
       }}
     >
       {children}

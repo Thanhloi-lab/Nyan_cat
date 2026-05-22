@@ -9,7 +9,8 @@ export default function ExportPanel() {
     settings,
     exportProjectJson,
     importProjectJson,
-    getActiveRenderPartsMapping
+    getActiveRenderPartsMapping,
+    t
   } = useContext(AppContext);
 
   // Video recording states
@@ -172,10 +173,10 @@ export default function ExportPanel() {
     reader.onload = (event) => {
       const result = importProjectJson(event.target.result);
       if (result.success) {
-        setImportStatus({ type: 'success', message: 'Đã nhập (Import) dự án thành công!' });
+        setImportStatus({ type: 'success', message: t('exportPanel.importSuccess') });
         setTimeout(() => setImportStatus({ type: '', message: '' }), 4000);
       } else {
-        setImportStatus({ type: 'error', message: 'Lỗi: Tệp tin không đúng định dạng. ' + result.error });
+        setImportStatus({ type: 'error', message: t('exportPanel.importError', { error: result.error }) });
       }
     };
     reader.readAsText(file);
@@ -189,18 +190,18 @@ export default function ExportPanel() {
         <div className="pipeline-card highlighted glass-card">
           <div className="pipeline-header">
             <div className="icon-wrapper bg-magenta"><FileText size={20} /></div>
-            <span className="card-tag">PROJECT RESTORE</span>
+          <span className="card-tag">{t('exportPanel.tags.projectRestore')}</span>
           </div>
-          <h3>1. Save & Load Project File</h3>
-          <p>Xuất hoặc nhập toàn bộ dữ liệu vẽ, các lớp layer lắp ráp z-index và gán hoạt ảnh vào 1 tệp JSON (Key tiếng Anh). An toàn và dễ chia sẻ.</p>
+          <h3>{t('exportPanel.card1Title')}</h3>
+          <p>{t('exportPanel.card1Desc')}</p>
           
           <div className="json-action-row">
             <button className="btn btn-primary btn-glow" onClick={handleExportJson}>
-              <Download size={14} style={{ marginRight: 6 }} /> Export JSON Project
+              <Download size={14} style={{ marginRight: 6 }} /> {t('exportPanel.exportJson')}
             </button>
 
             <label className="btn btn-secondary cursor-pointer">
-              <Upload size={14} style={{ marginRight: 6 }} /> Import JSON Project
+              <Upload size={14} style={{ marginRight: 6 }} /> {t('exportPanel.importJson')}
               <input
                 type="file"
                 accept=".json"
@@ -221,12 +222,12 @@ export default function ExportPanel() {
         <div className="pipeline-card glass-card">
           <div className="pipeline-header">
             <div className="icon-wrapper bg-cyan"><Archive size={20} /></div>
-            <span className="card-tag">PNG SPRITE PACK</span>
+            <span className="card-tag">{t('exportPanel.tags.pngPack')}</span>
           </div>
-          <h3>2. Export Custom PNG Frames</h3>
-          <p>Tải xuống chuỗi 4 khung hình động (PNG nền trong suốt) của chú mèo Nyan Cat đã custom. Hoàn hảo để thiết kế overlays, stream widgets hoặc edit video.</p>
+          <h3>{t('exportPanel.card2Title')}</h3>
+          <p>{t('exportPanel.card2Desc')}</p>
           <button className="btn btn-secondary btn-glow btn-full-width" onClick={handleExportZip}>
-            <Download size={14} style={{ marginRight: 6 }} /> Download Sprite ZIP
+            <Download size={14} style={{ marginRight: 6 }} /> {t('exportPanel.downloadZip')}
           </button>
         </div>
 
@@ -234,10 +235,10 @@ export default function ExportPanel() {
         <div className="pipeline-card glass-card">
           <div className="pipeline-header">
             <div className="icon-wrapper bg-yellow"><Video size={20} /></div>
-            <span className="card-tag">VIDEO PIPELINE</span>
+            <span className="card-tag">{t('exportPanel.tags.video')}</span>
           </div>
-          <h3>3. Record Lossless WebM</h3>
-          <p>Ghi hình trực tiếp màn hình Canvas preview 1920x462 ở tốc độ 24 FPS với chất lượng nén cao 6 Mbps. Thích hợp cho cả Nyan Cat và cảnh lắp ráp layers!</p>
+          <h3>{t('exportPanel.card3Title')}</h3>
+          <p>{t('exportPanel.card3Desc')}</p>
           
           <div className="recording-controls">
             <div className="select-container">

@@ -10,7 +10,7 @@ import { Sparkles } from 'lucide-react';
 function AppContent() {
   const [currentPage, setCurrentPage] = useState('dashboard'); // 'dashboard' | 'assembler'
   const [activeTab, setActiveTab] = useState('editor'); // 'editor' | 'export'
-  const { settings, updateSetting, toastMessage } = useContext(AppContext);
+  const { settings, updateSetting, toastMessage, t } = useContext(AppContext);
   const [previousMoveMode, setPreviousMoveMode] = useState('crosser');
 
   // Page-level transition handler
@@ -34,13 +34,36 @@ function AppContent() {
         <header className="app-header">
           <div className="logo-area">
             <Sparkles className="text-yellow" size={20} />
-            <span className="retro-brand-title text-rainbow">ASSEMBLER STUDIO</span>
-            <span className="logo-badge">CUSTOM MODEL CREATOR</span>
+            <span className="retro-brand-title text-rainbow">{t('app.assemblerStudio')}</span>
+            <span className="logo-badge">{t('app.customModelCreator')}</span>
           </div>
           <button className="btn-neon-back" onClick={() => handlePageChange('dashboard')}>
-            ⬅️ Quay lại Dashboard
+            {t('app.backToDashboard')}
           </button>
-          <div className="resolution-tag">FREE ASSEMBLY & LAYER Z-INDEX COMPOSITOR</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="resolution-tag">{t('app.assemblerResolutionTag')}</div>
+            <select
+              aria-label={t('settings.language')}
+              value={settings.language || 'vi'}
+              onChange={(e) => updateSetting('language', e.target.value)}
+              style={{
+                height: 28,
+                padding: '0 10px',
+                borderRadius: 999,
+                background: 'rgba(0,0,0,0.35)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 'bold',
+                letterSpacing: '0.5px',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="vi">{t('lang.vi')}</option>
+              <option value="en">{t('lang.en')}</option>
+            </select>
+          </div>
         </header>
 
         <main style={{ padding: '24px 32px' }}>
@@ -62,16 +85,39 @@ function AppContent() {
       <header className="app-header">
         <div className="logo-area">
           <Sparkles className="text-yellow" size={20} />
-          <span className="retro-brand-title text-rainbow">NYAN CAT STUDIO</span>
-          <span className="logo-badge">WIDESCREEN EDITION</span>
+          <span className="retro-brand-title text-rainbow">{t('app.brand')}</span>
+          <span className="logo-badge">{t('app.widescreenEdition')}</span>
         </div>
         
         {/* Dynamic Navigation to Standalone Custom Assembler Page */}
         <button className="btn-neon-action" onClick={() => handlePageChange('assembler')}>
-          🚀 Custom Model Assembler
+          {t('app.goAssembler')}
         </button>
 
-        <div className="resolution-tag">PC CASE MONITOR COMPATIBLE (1920 × 462 NATIVE)</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="resolution-tag">{t('app.resolutionTag')}</div>
+          <select
+            aria-label={t('settings.language')}
+            value={settings.language || 'vi'}
+            onChange={(e) => updateSetting('language', e.target.value)}
+            style={{
+              height: 28,
+              padding: '0 10px',
+              borderRadius: 999,
+              background: 'rgba(0,0,0,0.35)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              color: '#fff',
+              fontSize: 12,
+              fontWeight: 'bold',
+              letterSpacing: '0.5px',
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="vi">{t('lang.vi')}</option>
+            <option value="en">{t('lang.en')}</option>
+          </select>
+        </div>
       </header>
 
       {/* Main Grid Columns Workspace */}
@@ -89,13 +135,13 @@ function AppContent() {
                 className={`tab-nav-btn ${activeTab === 'editor' ? 'active' : ''}`}
                 onClick={() => setActiveTab('editor')}
               >
-                1. PIXEL ART CREATOR
+                {t('app.tabs.editor')}
               </button>
               <button
                 className={`tab-nav-btn ${activeTab === 'export' ? 'active' : ''}`}
                 onClick={() => setActiveTab('export')}
               >
-                2. CAPTURE TO VIDEO
+                {t('app.tabs.export')}
               </button>
             </div>
 

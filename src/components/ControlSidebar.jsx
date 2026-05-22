@@ -2,22 +2,23 @@ import { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Sliders, Paintbrush, Link2 } from 'lucide-react';
 
-const DYNAMIC_SLOTS = [
-  { id: 'HEAD_OPEN', label: 'Cat Head (Eyes Open)' },
-  { id: 'HEAD_BLINK', label: 'Cat Head (Blinking)' },
-  { id: 'POPTART', label: 'Pop-Tart Toast Body' },
-  { id: 'TAIL_UP', label: 'Tail (Upward wave)' },
-  { id: 'TAIL_MID', label: 'Tail (Horizontal wave)' },
-  { id: 'TAIL_DOWN', label: 'Tail (Downward wave)' },
-  { id: 'LEG_DOWN', label: 'Leg (Straight down)' },
-  { id: 'LEG_FRONT', label: 'Leg (Kick front)' },
-  { id: 'LEG_BACK', label: 'Leg (Kick back)' }
+const DYNAMIC_SLOT_IDS = [
+  'HEAD_OPEN',
+  'HEAD_BLINK',
+  'POPTART',
+  'TAIL_UP',
+  'TAIL_MID',
+  'TAIL_DOWN',
+  'LEG_DOWN',
+  'LEG_FRONT',
+  'LEG_BACK'
 ];
 
 export default function ControlSidebar() {
   const {
     settings,
     updateSetting,
+    t,
     customParts,
     bindings,
     bindPartToSlot,
@@ -32,26 +33,39 @@ export default function ControlSidebar() {
       <div className="sidebar-card glass-card">
         <div className="sidebar-header">
           <Sliders size={16} className="text-magenta" />
-          <h3>DYNAMIC SYSTEM CONTROLS</h3>
+          <h3>{t('sidebar.dynamicControls')}</h3>
+        </div>
+
+        {/* Language */}
+        <div className="control-group">
+          <label className="control-label">{t ? t('settings.language') : 'Language'}</label>
+          <select
+            className="select-custom"
+            value={settings.language || 'vi'}
+            onChange={(e) => updateSetting('language', e.target.value)}
+          >
+            <option value="vi">{t ? t('lang.vi') : 'Vietnamese'}</option>
+            <option value="en">{t ? t('lang.en') : 'English'}</option>
+          </select>
         </div>
 
         {/* Movement Mode */}
         <div className="control-group">
-          <label className="control-label">Movement Mode</label>
+          <label className="control-label">{t('sidebar.movementMode')}</label>
           <div className="btn-toggle-group" style={{ display: 'flex', gap: '2px', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--color-border-glow)', borderRadius: '6px', padding: '2px' }}>
             <button
               className={`toggle-btn ${settings.movementMode === 'crosser' ? 'active' : ''}`}
               onClick={() => updateSetting('movementMode', 'crosser')}
               style={{ flex: 1, fontSize: '10px', padding: '6px 2px', whiteSpace: 'nowrap' }}
             >
-              Crosser
+              {t('movement.crosser')}
             </button>
             <button
               className={`toggle-btn ${settings.movementMode === 'stationary' ? 'active' : ''}`}
               onClick={() => updateSetting('movementMode', 'stationary')}
               style={{ flex: 1, fontSize: '10px', padding: '6px 2px', whiteSpace: 'nowrap' }}
             >
-              Hover
+              {t('movement.stationary')}
             </button>
             <button
               className={`toggle-btn ${settings.movementMode === 'assembler' ? 'active' : ''}`}
@@ -63,7 +77,7 @@ export default function ControlSidebar() {
               }}
               style={{ flex: 1, fontSize: '10px', padding: '6px 2px', whiteSpace: 'nowrap' }}
             >
-              Custom Model
+              {t('movement.assembler')}
             </button>
           </div>
         </div>
@@ -77,7 +91,7 @@ export default function ControlSidebar() {
             </label>
             {Object.keys(profiles).length === 0 ? (
               <div style={{ fontSize: '11px', color: '#888', fontStyle: 'italic', padding: '4px 0' }}>
-                Không có profile nào. Hãy tạo mới ở trang Assembler Studio!
+                {t('sidebar.noProfilesHint')}
               </div>
             ) : (
               <select
@@ -86,7 +100,7 @@ export default function ControlSidebar() {
                 onChange={(e) => loadProfile(e.target.value)}
                 style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border-glow)', color: '#fff', borderRadius: '4px', padding: '6px', outline: 'none' }}
               >
-                <option value="" disabled>-- Chọn profile --</option>
+                <option value="" disabled>{t('sidebar.chooseProfile')}</option>
                 {Object.keys(profiles).map((id) => (
                   <option key={id} value={id}>{profiles[id].name}</option>
                 ))}
@@ -98,7 +112,7 @@ export default function ControlSidebar() {
         {/* Pixel Art Scale */}
         <div className="control-group">
           <div className="slider-row">
-            <label className="control-label">Pixel Art Scale</label>
+            <label className="control-label">{t('sidebar.pixelScale')}</label>
             <span className="slider-val text-cyan">{settings.scale}x</span>
           </div>
           <input
@@ -114,7 +128,7 @@ export default function ControlSidebar() {
         {/* Speed FPS */}
         <div className="control-group">
           <div className="slider-row">
-            <label className="control-label">Running Speed (FPS)</label>
+            <label className="control-label">{t('sidebar.fps')}</label>
             <span className="slider-val text-cyan">{settings.fps} FPS</span>
           </div>
           <input
@@ -131,8 +145,8 @@ export default function ControlSidebar() {
         {settings.movementMode !== 'assembler' && (
           <div className="control-group">
             <div className="slider-row">
-              <label className="control-label">Space Stars Density</label>
-              <span className="slider-val text-cyan">{settings.starDensity} stars</span>
+              <label className="control-label">{t('sidebar.starDensity')}</label>
+              <span className="slider-val text-cyan">{t('sidebar.starCount', { count: settings.starDensity })}</span>
             </div>
             <input
               type="range"
@@ -150,37 +164,37 @@ export default function ControlSidebar() {
       <div className="sidebar-card glass-card">
         <div className="sidebar-header">
           <Paintbrush size={16} className="text-yellow" />
-          <h3>CUSTOMIZE SPRITE</h3>
+          <h3>{t('sidebar.customizeSprite')}</h3>
         </div>
 
         {/* Skin Selector */}
         <div className="control-group">
-          <label className="control-label">Cat Skin Color</label>
+          <label className="control-label">{t('sidebar.skinStyle')}</label>
           <select
             className="select-custom"
             value={settings.skinStyle}
             onChange={(e) => updateSetting('skinStyle', e.target.value)}
           >
-            <option value="classic">Classic Grey</option>
-            <option value="tabby">Orange Tabby</option>
-            <option value="siamese">Siamese Cream</option>
-            <option value="void">Void Black</option>
-            <option value="albino">Albino White</option>
+            <option value="classic">{t('skin.classic')}</option>
+            <option value="tabby">{t('skin.tabby')}</option>
+            <option value="siamese">{t('skin.siamese')}</option>
+            <option value="void">{t('skin.void')}</option>
+            <option value="albino">{t('skin.albino')}</option>
           </select>
         </div>
 
         {/* Poptart selector */}
         <div className="control-group">
-          <label className="control-label">Pop-Tart Flavor Theme</label>
+          <label className="control-label">{t('sidebar.poptartStyle')}</label>
           <select
             className="select-custom"
             value={settings.poptartStyle}
             onChange={(e) => updateSetting('poptartStyle', e.target.value)}
           >
-            <option value="strawberry">Strawberry Pink</option>
-            <option value="blueberry">Blueberry Blue</option>
-            <option value="chocolate">Chocolate Fudge</option>
-            <option value="custom">Custom Theme</option>
+            <option value="strawberry">{t('poptart.strawberry')}</option>
+            <option value="blueberry">{t('poptart.blueberry')}</option>
+            <option value="chocolate">{t('poptart.chocolate')}</option>
+            <option value="custom">{t('poptart.custom')}</option>
           </select>
         </div>
 
@@ -189,7 +203,7 @@ export default function ControlSidebar() {
           <div className="custom-colors-picker-box font-sans">
             <div className="picker-row">
               <div className="picker-col">
-                <label>Frosting</label>
+                <label>{t('sidebar.frosting')}</label>
                 <input
                   type="color"
                   value={settings.customFrostingColor}
@@ -197,7 +211,7 @@ export default function ControlSidebar() {
                 />
               </div>
               <div className="picker-col">
-                <label>Crust</label>
+                <label>{t('sidebar.crust')}</label>
                 <input
                   type="color"
                   value={settings.customCrustColor}
@@ -205,7 +219,7 @@ export default function ControlSidebar() {
                 />
               </div>
               <div className="picker-col">
-                <label>Sprinkles</label>
+                <label>{t('sidebar.sprinkles')}</label>
                 <input
                   type="color"
                   value={settings.customSprinkleColor}
@@ -219,9 +233,9 @@ export default function ControlSidebar() {
         {/* Head position offsets (visible only in dynamic animations) */}
         {settings.movementMode !== 'assembler' && (
           <div className="head-offsets-box font-sans">
-            <h4 className="sub-title">Head Placement Fine-Tuning</h4>
+            <h4 className="sub-title">{t('sidebar.headFineTune')}</h4>
             <div className="slider-row">
-              <label>Horizontal (HEAD_DX)</label>
+              <label>{t('sidebar.headDx')}</label>
               <span className="text-cyan">{settings.headDx} px</span>
             </div>
             <input
@@ -233,7 +247,7 @@ export default function ControlSidebar() {
               className="custom-slider"
             />
             <div className="slider-row" style={{ marginTop: 8 }}>
-              <label>Vertical (HEAD_DY)</label>
+              <label>{t('sidebar.headDy')}</label>
               <span className="text-cyan">{settings.headDy} px</span>
             </div>
             <input
@@ -250,16 +264,16 @@ export default function ControlSidebar() {
         {/* Rainbow Style selector */}
         {settings.movementMode !== 'assembler' && (
           <div className="control-group" style={{ marginTop: 12 }}>
-            <label className="control-label">Rainbow Trail Wave Style</label>
+            <label className="control-label">{t('sidebar.rainbowStyle')}</label>
             <select
               className="select-custom"
               value={settings.rainbowStyle}
               onChange={(e) => updateSetting('rainbowStyle', e.target.value)}
             >
-              <option value="classic">Classic Rainbow</option>
-              <option value="neon">Cyberpunk Neon</option>
-              <option value="pastel">Pastel Dreams</option>
-              <option value="monochrome">Monochrome Wave</option>
+              <option value="classic">{t('rainbow.classic')}</option>
+              <option value="neon">{t('rainbow.neon')}</option>
+              <option value="pastel">{t('rainbow.pastel')}</option>
+              <option value="monochrome">{t('rainbow.monochrome')}</option>
             </select>
           </div>
         )}
@@ -270,23 +284,23 @@ export default function ControlSidebar() {
         <div className="sidebar-card glass-card">
           <div className="sidebar-header">
             <Link2 size={16} className="text-cyan" />
-            <h3>MOTION SLOT BINDINGS</h3>
+            <h3>{t('sidebar.motionBindings')}</h3>
           </div>
           <p className="binding-desc font-sans">
-            Gán các bộ phận vẽ tùy chỉnh (My Custom Sprites) của bạn vào các khớp chuyển động nhấp nhô của Nyan Cat.
+            {t('sidebar.motionBindingsDesc')}
           </p>
           
           <div className="bindings-slots-list font-sans">
-            {DYNAMIC_SLOTS.map((slot) => {
+            {DYNAMIC_SLOT_IDS.map((slotId) => {
               return (
-                <div key={slot.id} className="binding-slot-row">
-                  <span className="slot-title">{slot.label}</span>
+                <div key={slotId} className="binding-slot-row">
+                  <span className="slot-title">{t(`slots.${slotId}`)}</span>
                   <select
                     className="select-custom select-compact"
-                    value={bindings[slot.id] || 'default'}
-                    onChange={(e) => bindPartToSlot(slot.id, e.target.value)}
+                    value={bindings[slotId] || 'default'}
+                    onChange={(e) => bindPartToSlot(slotId, e.target.value)}
                   >
-                    <option value="default">Default Sprite (Mặc định)</option>
+                    <option value="default">{t('sidebar.defaultSprite')}</option>
                     {Object.keys(customParts).map((key) => (
                       <option key={key} value={key}>
                         {customParts[key].name} ({customParts[key].width}x{customParts[key].height})
