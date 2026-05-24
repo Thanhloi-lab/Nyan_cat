@@ -130,28 +130,61 @@ const HEAD_BLINK = [
   [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0],
 ];
 
-// --- Leg Shapes (each 3 wide × 3 tall) ---
-const LEG_DOWN  = [[1,1,1],[1,2,1],[1,2,1]];
-const LEG_FRONT = [[1,1,1],[1,2,1],[0,1,1]];
-const LEG_BACK  = [[1,1,1],[1,2,1],[1,1,0]];
-const LEG_SHAPES = [LEG_DOWN, LEG_FRONT, LEG_BACK];
+// --- Leg Shapes (pixel-accurate, 4 distinct matrices) ---
+// Naming convention: FRONT = 2 legs on right side, BACK = 2 legs on left side
+//   _1 = outermost leg (right-most for FRONT, left-most for BACK)
+//   _2 = innermost leg
+const LEG_FRONT_1 = [
+  [0,0,1,1,1],
+  [0,1,1,2,1],
+  [1,1,2,2,1],
+  [0,1,1,1,1],
+];
 
-// X offsets for 4 legs relative to poptart left column
-const LEG_DX = [3, 7, 13, 17];
-// Leg row starts right below poptart (poptart is 12 rows, so dy=12)
-const LEG_DY = 12;
+const LEG_FRONT_2 = [
+  [1,1,1,1],
+  [1,2,2,1],
+  [1,2,2,1],
+  [1,1,1,0],
+];
+
+const LEG_BACK_1 = [
+  [1,1,1,1],
+  [1,2,2,1],
+  [1,2,2,1],
+  [1,1,1,0],
+];
+
+const LEG_BACK_2 = [
+  [0,0,1,1,1],
+  [0,1,2,2,1],
+  [1,2,2,2,1],
+  [1,1,1,1,0],
+];
+
+// X offsets for 4 legs relative to poptart left column.
+// Order (left → right): BACK_2, BACK_1, FRONT_2, FRONT_1
+const LEG_DX = [0, 5, 13, 17];
 
 // X offsets for head and legs per frame (4-frame cycle)
 const HEAD_X_OFFSETS = [-1, 0, 1, 0];
-const LEG_X_OFFSETS = [-1, 1, -1, 1];
 
-// Which leg shape per frame: [backL, backR, frontL, frontR]
-// 0=down, 1=front-kick, 2=back-kick
+// Leg movement follows the same circular pattern as the head:
+//   Frame 0: left  (dx=-1, dy= 0)
+//   Frame 1: up    (dx= 0, dy=-1)
+//   Frame 2: right (dx=+1, dy= 0)
+//   Frame 3: down  (dx= 0, dy=+1)  ← back to baseline
+const LEG_X_OFFSETS = [-1, 0, 1, 0];
+const LEG_Y_OFFSETS = [ 0,-1, 0, 1];
+
+// Per-frame leg grids: [BACK_2, BACK_1, FRONT_2, FRONT_1]
+// Each pair alternates between pose A and pose B across frames.
+// Frames 0 & 2 swap poses; Frames 1 & 3 swap back.
 const LEG_ANIM = [
-  [1, 2, 2, 1],  // Frame 0: alternating kicks
-  [0, 0, 0, 0],  // Frame 1: all down
-  [2, 1, 1, 2],  // Frame 2: reverse alternation
-  [0, 0, 0, 0]   // Frame 3: all down
+  [LEG_BACK_2,  LEG_BACK_1,  LEG_FRONT_2, LEG_FRONT_1],  // Frame 0: pose A
+  [LEG_BACK_1,  LEG_BACK_2,  LEG_FRONT_1, LEG_FRONT_2],  // Frame 1: pose B
+  [LEG_BACK_2,  LEG_BACK_1,  LEG_FRONT_2, LEG_FRONT_1],  // Frame 2: pose A
+  [LEG_BACK_1,  LEG_BACK_2,  LEG_FRONT_1, LEG_FRONT_2],  // Frame 3: pose B
 ];
 
 // --- Tail Shapes ---
@@ -288,7 +321,7 @@ class NyanCatModel {
         const hex = colorMap[idx];
         if (!hex) continue;
         ctx.fillStyle = hex;
-        ctx.fillRect(ox + c * s, oy + r * s, s, s);
+        ctx.fillRect(ox + c * s, oy + r * s, s+0.5, s+0.5);
       }
     }
   }
@@ -310,10 +343,20 @@ class NyanCatModel {
     this.drawGrid(ctx, tailGrid, px + ta.dx * s, py + ta.dy * s, colors);
 
     // --- 2. Draw Legs (below poptart, bob with body) ---
-    const legAnim = LEG_ANIM[frame];
+    // LEG_ANIM[frame] contains the actual grid for each of the 4 legs:
+    // index order: [BACK_2, BACK_1, FRONT_2, FRONT_1] (left → right)
+    // Both X and Y offsets mirror the circular head movement pattern.
+    const legFrameGrids = LEG_ANIM[frame];
+    const legOffX = LEG_X_OFFSETS[frame] * s;
+    const legOffY = LEG_Y_OFFSETS[frame] * s;
     for (let i = 0; i < 4; i++) {
-      const legGrid = LEG_SHAPES[legAnim[i]];
-      this.drawGrid(ctx, legGrid, px + (LEG_DX[i] + LEG_X_OFFSETS[frame]) * s, py + POPTART.length * s, colors);
+      const legGrid = legFrameGrids[i];
+      this.drawGrid(
+        ctx, legGrid,
+        px + LEG_DX[i] * s + legOffX,
+        py + (POPTART.length - 2)* s + legOffY ,
+        colors
+      );
     }
 
     // --- 3. Draw Pop-Tart Body (main visual, covers tail overlap) ---
@@ -428,17 +471,27 @@ class RainbowTrail {
     const palette = PALETTES.rainbows[rainbowStyle] || PALETTES.rainbows.classic;
     const colors = palette.colors;         // 6 colors
     const stripeH = 2 * scale;             // Each stripe is 2 pixel-units tall
-    const segW    = 3 * scale;             // Width of each horizontal wave segment
+    const segW    = 6 * scale;             // Width of each horizontal wave segment
 
-    // Rainbow vertical center aligns with poptart vertical center
-    const centerY = catY + (POPTART.length / 2) * scale;
+    // Căn giữa cầu vồng theo trục Y của thân mèo (giả định thân mèo cao 18 pixel-units)
+    const centerY = catY + (18 / 2) * scale; 
 
-    // Rainbow extends from left edge of screen to poptart's left edge
+    // Điểm kết thúc của cầu vồng nối ngay sau đuôi mèo
     const endX = catX + 1 * scale;
 
     for (let x = 0; x < endX; x += segW) {
-      // Sinusoidal wave creates the classic flowing undulation
-      const waveY = Math.sin(x * 0.025 - frame * 0.4) * 2 * scale;
+      // Xác định vị trí của khối segment hiện tại trên trục X
+      const segmentIndex = Math.floor(x / segW);
+
+      // Nhịp độ animation: Cứ mỗi 4 frame thì giá trị này mới tăng lên 1
+      const animationStep = Math.floor(frame / 4);
+
+      // Tạo hiệu ứng lượn sóng blocky: xen kẽ lên/xuống (0 hoặc 1)
+      const isUp = Math.abs((segmentIndex - animationStep) % 2) === 0;
+      
+      // Tính độ lệch Y: nếu isUp = true thì lệch 0, ngược lại thì tụt xuống 1 pixel-unit
+      const waveY = (isUp ? 0 : 1) * scale;
+      
       const baseY = centerY - 6 * scale + waveY;
 
       for (let i = 0; i < 6; i++) {

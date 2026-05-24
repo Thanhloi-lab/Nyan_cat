@@ -189,13 +189,17 @@ animate();
                   <select id="selectEditorSprite" class="custom-select" onchange="onEditorSpriteChange(this.value)">
                     <option value="HEAD_OPEN" selected>Đầu mèo - Mở mắt (HEAD_OPEN)</option>
                     <option value="HEAD_BLINK">Đầu mèo - Nhắm mắt (HEAD_BLINK)</option>
+
                     <option value="POPTART">Thân bánh Pop-Tart (POPTART)</option>
+
                     <option value="TAIL_UP">Đuôi - Vểnh lên (TAIL_UP)</option>
                     <option value="TAIL_MID">Đuôi - Nằm ngang (TAIL_MID)</option>
                     <option value="TAIL_DOWN">Đuôi - Cụp xuống (TAIL_DOWN)</option>
-                    <option value="LEG_DOWN">Chân thẳng (LEG_DOWN)</option>
-                    <option value="LEG_FRONT">Chân đá trước (LEG_FRONT)</option>
-                    <option value="LEG_BACK">Chân đá sau (LEG_BACK)</option>
+
+                    <option value="LEG_FRONT_1">Chân trước 1 (LEG_FRONT_1)</option>
+                    <option value="LEG_FRONT_2">Chân trước 2 (LEG_FRONT_2)</option>
+                    <option value="LEG_BACK_1">Chân sau 1 (LEG_BACK_1)</option>
+                    <option value="LEG_BACK_2">Chân sau 2 (LEG_BACK_2)</option>
                   </select>
                 </div>
 
@@ -457,7 +461,7 @@ animate();
           // Handle Movement Logic
           if (movementMode === 'crosser') {
             // Speed of screen transition
-            nyanCat.x += 4.5;
+            nyanCat.x += 13.5;
             // Wrap around logic (leaves right boundary, respawns off left boundary)
             if (nyanCat.x > 1920 + 100) {
               nyanCat.x = -200;
@@ -514,7 +518,7 @@ animate();
         nyanCat.scale = scale;
         nyanCat.width = SPRITE_W * scale;
         nyanCat.height = SPRITE_H * scale;
-        nyanCat.y = Math.round((462 - 13 * scale) / 2);
+        nyanCat.y = Math.round((300 - 13 * scale) / 2);
       } else if (sliderId === 'Fps') {
         fps = parseInt(value);
         frameInterval = 1000 / fps;
@@ -743,9 +747,10 @@ animate();
       originalSprites['TAIL_UP'] = JSON.parse(JSON.stringify(TAIL_UP));
       originalSprites['TAIL_MID'] = JSON.parse(JSON.stringify(TAIL_MID));
       originalSprites['TAIL_DOWN'] = JSON.parse(JSON.stringify(TAIL_DOWN));
-      originalSprites['LEG_DOWN'] = JSON.parse(JSON.stringify(LEG_DOWN));
-      originalSprites['LEG_FRONT'] = JSON.parse(JSON.stringify(LEG_FRONT));
-      originalSprites['LEG_BACK'] = JSON.parse(JSON.stringify(LEG_BACK));
+      originalSprites['LEG_FRONT_1'] = JSON.parse(JSON.stringify(LEG_FRONT_1));
+      originalSprites['LEG_FRONT_2'] = JSON.parse(JSON.stringify(LEG_FRONT_2));
+      originalSprites['LEG_BACK_1'] = JSON.parse(JSON.stringify(LEG_BACK_1));
+      originalSprites['LEG_BACK_2'] = JSON.parse(JSON.stringify(LEG_BACK_2));
     }
 
     function getSpriteArray(name) {
@@ -755,9 +760,10 @@ animate();
       if (name === 'TAIL_UP') return TAIL_UP;
       if (name === 'TAIL_MID') return TAIL_MID;
       if (name === 'TAIL_DOWN') return TAIL_DOWN;
-      if (name === 'LEG_DOWN') return LEG_DOWN;
-      if (name === 'LEG_FRONT') return LEG_FRONT;
-      if (name === 'LEG_BACK') return LEG_BACK;
+      if (name === 'LEG_FRONT_1') return LEG_FRONT_1;
+      if (name === 'LEG_FRONT_2') return LEG_FRONT_2;
+      if (name === 'LEG_BACK_1') return LEG_BACK_1;
+      if (name === 'LEG_BACK_2') return LEG_BACK_2;
       return null;
     }
 
