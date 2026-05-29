@@ -57,6 +57,9 @@ export default function ModelAssembler() {
     loadPackage,
     unloadPackage,
     deletePackage,
+    customPalettes,
+    importCustomPalette,
+    deleteCustomPalette,
   } = useContext(AppContext);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,6 +81,102 @@ export default function ModelAssembler() {
   // Animation Play Preview State for workspace
   const [isPlayPreviewActive, setIsPlayPreviewActive] = useState(false);
   const [previewSecondsElapsed, setPreviewSecondsElapsed] = useState(0);
+
+  const [isCreatingPalette, setIsCreatingPalette] = useState(false);
+  const [newPaletteName, setNewPaletteName] = useState("");
+  const [newPaletteColors, setNewPaletteColors] = useState({
+    1: "#ff0000",
+    2: "#00ff00",
+    3: "#0000ff",
+    4: "#ffff00",
+  });
+
+  const handleNewPaletteColorChange = (idx, hex) => {
+    setNewPaletteColors((prev) => ({ ...prev, [idx]: hex }));
+  };
+
+  const handleAddNewPaletteColor = () => {
+    const nextIdx = Math.max(0, ...Object.keys(newPaletteColors).map(Number)) + 1;
+    setNewPaletteColors((prev) => ({ ...prev, [nextIdx]: "#ffffff" }));
+  };
+
+  const handleRemoveNewPaletteColor = (idx) => {
+    setNewPaletteColors((prev) => {
+      const copy = { ...prev };
+      delete copy[idx];
+      // Re-key sequentially to make it clean
+      const keys = Object.keys(copy).map(Number).sort((a, b) => a - b);
+      const rekeyed = {};
+      keys.forEach((k, i) => {
+        rekeyed[i + 1] = copy[k];
+      });
+      return rekeyed;
+    });
+  };
+
+  const handleSaveAndExportPalette = () => {
+    const name = newPaletteName.trim();
+    if (!name) {
+      alert(t("pixelEditor.errors.missingPaletteName") || "⚠️ Vui lòng nhập tên gói màu!");
+      return;
+    }
+    if (Object.keys(newPaletteColors).length === 0) {
+      alert("⚠️ Gói màu phải có ít nhất 1 màu!");
+      return;
+    }
+
+    // 1. Save to global library
+    importCustomPalette(name, newPaletteColors);
+
+    // 2. Download JSON file
+    const payload = {
+      paletteName: name,
+      colors: newPaletteColors,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${name.replace(/\s+/g, "_").toLowerCase()}_palette.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    // 3. Reset state & notify
+    setIsCreatingPalette(false);
+    setNewPaletteName("");
+    setNewPaletteColors({ 1: "#ff0000", 2: "#00ff00", 3: "#0000ff", 4: "#ffff00" });
+    if (setToastMessage) {
+      setToastMessage(
+        t("pixelEditor.toasts.paletteSaved", { name }) || `🎨 Đã lưu gói màu "${name}" vào thư viện!`
+      );
+    }
+  };
+
+  const handleExportPaletteGlobal = (name) => {
+    const palette = customPalettes[name];
+    if (!palette) return;
+    const colors = palette.colors || palette;
+    const labels = palette.labels || {};
+    const payload = {
+      paletteName: name,
+      colors,
+      labels,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${name.replace(/\s+/g, "_").toLowerCase()}_palette.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    if (setToastMessage) {
+      setToastMessage(t("pixelEditor.toasts.paletteExported") || "📤 Đã xuất gói màu thành công!");
+    }
+  };
 
   useEffect(() => {
     if (!isPlayPreviewActive) return;
@@ -631,7 +730,8 @@ export default function ModelAssembler() {
   };
 
   // Draw 2D array representation onto a miniature HTML structure for previews
-  const renderMiniPartPreview = (grid, cols, rows) => {
+  const renderMiniPartPreview = (grid, cols, rows, palette = null) => {
+    const previewColorMap = palette ? { ...colorMap, ...palette } : colorMap;
     return (
       <div
         className="mini-preview-grid"
@@ -649,7 +749,7 @@ export default function ModelAssembler() {
             <div
               key={`${r}-${c}`}
               style={{
-                backgroundColor: val === 0 ? "transparent" : colorMap[val],
+                backgroundColor: val === 0 ? "transparent" : previewColorMap[val],
               }}
             />
           )),
@@ -2000,18 +2100,21 @@ export default function ModelAssembler() {
                 let partData;
                 let width = 0;
                 let height = 0;
+                let partPalette = null;
   
                 const live = liveEditingPartRef.current;
                 if (live && live.key === partName && live.data) {
                   partData = live.data;
                   width = partData[0] ? partData[0].length : 0;
                   height = partData.length;
+                  partPalette = live.palette;
                 } else {
                   const custom = customParts[partName];
                   if (custom) {
                     partData = custom.data;
                     width = custom.width;
                     height = custom.height;
+                    partPalette = custom.palette;
                   } else if (DEFAULT_SPRITES[partName]) {
                     partData = DEFAULT_SPRITES[partName];
                     height = partData.length;
@@ -2022,6 +2125,7 @@ export default function ModelAssembler() {
                 if (!partData) return null;
   
                 const s = settings.scale; // Pixel art scaling unit
+                const layerColorMap = partPalette ? { ...colorMap, ...partPalette } : colorMap;
   
                 return (
                   <div
@@ -2035,9 +2139,9 @@ export default function ModelAssembler() {
                       height: `${height * s}px`,
                       zIndex: layer.zIndex,
                       cursor:
-                        isDragging && activeLayerId === layer.id
-                          ? "grabbing"
-                          : "grab",
+                      isDragging && activeLayerId === layer.id
+                        ? "grabbing"
+                        : "grab",
                     }}
                     onMouseDown={(e) =>
                       handleMouseDown(e, layer.id, layer.x, layer.y)
@@ -2060,7 +2164,7 @@ export default function ModelAssembler() {
                             key={`${r}-${c}`}
                             style={{
                               backgroundColor:
-                                val === 0 ? "transparent" : colorMap[val],
+                              val === 0 ? "transparent" : layerColorMap[val],
                             }}
                           />
                         )),
@@ -2134,81 +2238,312 @@ export default function ModelAssembler() {
                 new Set(Object.values(customParts).map((p) => p.package || "My Custom"))
               ).filter((pkg) => pkg !== "Nyan Cat");
 
+              const handlePaletteUploadGlobal = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  try {
+                    const parsed = JSON.parse(event.target.result);
+                    const name = parsed.paletteName || file.name.replace('.json', '');
+                    const colors = parsed.colors || parsed;
+                    const labels = parsed.labels || {};
+                    const keys = Object.keys(colors);
+                    const isValid = keys.length > 0 && keys.every(k => typeof colors[k] === 'string' && colors[k].startsWith('#'));
+                    if (!isValid) {
+                      alert(t('pixelEditor.errors.invalidPalette') || '⚠️ File JSON không hợp lệ! Phải chứa các key trỏ tới mã màu HEX.');
+                      return;
+                    }
+                    importCustomPalette(name, colors, labels);
+                    if (setToastMessage) {
+                      setToastMessage(t('pixelEditor.toasts.paletteLoaded', { name }) || `🎨 Đã nạp gói màu "${name}" thành công!`);
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    alert(t('pixelEditor.errors.paletteParseError') || '❌ Lỗi khi đọc file JSON gói màu!');
+                  }
+                };
+                reader.readAsText(file);
+              };
+
+              const handlePaletteDeleteGlobal = (name) => {
+                if (window.confirm(t('pixelEditor.confirm.deletePalette', { name }) || `Gỡ bỏ gói màu "${name}" khỏi danh sách?`)) {
+                  deleteCustomPalette(name);
+                  if (setToastMessage) {
+                    setToastMessage(t('pixelEditor.toasts.paletteDeleted', { name }) || `🗑️ Đã gỡ gói màu "${name}".`);
+                  }
+                }
+              };
+
               return (
-                <div className="package-manager-panel font-sans" style={{
-                  padding: "10px",
-                  background: "rgba(0, 229, 255, 0.03)",
-                  border: "1px solid rgba(0, 229, 255, 0.15)",
-                  borderRadius: "8px",
-                  marginBottom: "16px",
-                  fontSize: "11px"
-                }}>
-                  <h4 style={{ margin: "0 0 8px 0", color: "var(--color-neon-cyan)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span>📦 {t("modelAssembler.packageManager.title") || "Quản Lý Packages"}</span>
-                  </h4>
-                  
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    {/* Nyan Cat System Package */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 6px", background: "rgba(255,255,255,0.02)", borderRadius: "4px" }}>
-                      <span style={{ color: "#a0aab5" }}>🐱 Nyan Cat ({t("modelAssembler.packageManager.system") || "Hệ thống"})</span>
-                      <div style={{ display: "flex", gap: "4px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
+                  {/* 1. Parts Packages */}
+                  <div className="package-manager-panel font-sans" style={{
+                    padding: "10px",
+                    background: "rgba(0, 229, 255, 0.03)",
+                    border: "1px solid rgba(0, 229, 255, 0.15)",
+                    borderRadius: "8px",
+                    fontSize: "11px"
+                  }}>
+                    <h4 style={{ margin: "0 0 8px 0", color: "var(--color-neon-cyan)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>📦 {t("modelAssembler.packageManager.title") || "Quản Lý Gói Linh Kiện"}</span>
+                    </h4>
+                    
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {/* Nyan Cat System Package */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 6px", background: "rgba(255,255,255,0.02)", borderRadius: "4px" }}>
+                        <span style={{ color: "#a0aab5" }}>🐱 Nyan Cat ({t("modelAssembler.packageManager.system") || "Hệ thống"})</span>
+                        <div style={{ display: "flex", gap: "4px" }}>
+                          <button
+                            className="btn btn-secondary btn-small"
+                            onClick={() => loadedPackages.includes("Nyan Cat") ? unloadPackage("Nyan Cat") : loadPackage("Nyan Cat")}
+                            style={{
+                              padding: "2px 6px",
+                              fontSize: "9px",
+                              height: "18px",
+                              background: loadedPackages.includes("Nyan Cat") ? "rgba(255,0,127,0.1)" : "rgba(0,229,255,0.1)",
+                              border: loadedPackages.includes("Nyan Cat") ? "1px solid rgba(255,0,127,0.4)" : "1px solid rgba(0,229,255,0.4)",
+                              color: loadedPackages.includes("Nyan Cat") ? "#ff3366" : "#00e5ff",
+                              cursor: "pointer",
+                              borderRadius: "3px"
+                            }}
+                          >
+                            {loadedPackages.includes("Nyan Cat") ? (t("modelAssembler.packageManager.unload") || "Unload") : (t("modelAssembler.packageManager.load") || "Load")}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Custom Packages */}
+                      {customPackages.length === 0 ? (
+                        <div style={{ textAlign: "center", color: "#666", padding: "4px 0" }}>
+                          {t("modelAssembler.packageManager.noCustom") || "Chưa có package tự tạo nào"}
+                        </div>
+                      ) : (
+                        customPackages.map((pkg) => {
+                          const isLoaded = loadedPackages.includes(pkg);
+                          const partsInPkg = Object.keys(customParts).filter(k => (customParts[k].package || "My Custom") === pkg).length;
+                          return (
+                            <div key={pkg} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 6px", background: "rgba(255,255,255,0.04)", borderRadius: "4px", gap: "6px" }}>
+                              <span style={{ color: "#fff", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", flex: 1 }} title={pkg}>
+                                📦 {pkg} ({partsInPkg})
+                              </span>
+                              <div style={{ display: "flex", gap: "4px" }}>
+                                <button
+                                  className="btn btn-secondary btn-small"
+                                  onClick={() => isLoaded ? unloadPackage(pkg) : loadPackage(pkg)}
+                                  style={{
+                                    padding: "2px 6px",
+                                    fontSize: "9px",
+                                    height: "18px",
+                                    background: isLoaded ? "rgba(255,0,127,0.1)" : "rgba(0,229,255,0.1)",
+                                    border: isLoaded ? "1px solid rgba(255,0,127,0.4)" : "1px solid rgba(0,229,255,0.4)",
+                                    color: isLoaded ? "#ff3366" : "#00e5ff",
+                                    cursor: "pointer",
+                                    borderRadius: "3px"
+                                  }}
+                                >
+                                  {isLoaded ? (t("modelAssembler.packageManager.unload") || "Unload") : (t("modelAssembler.packageManager.load") || "Load")}
+                                </button>
+                                <button
+                                  className="btn btn-secondary btn-small"
+                                  onClick={() => {
+                                    if (window.confirm(t("modelAssembler.packageManager.confirmDelete", { name: pkg }) || `Xóa vĩnh viễn package "${pkg}" và tất cả linh kiện bên trong?`)) {
+                                      deletePackage(pkg);
+                                    }
+                                  }}
+                                  style={{
+                                    padding: "2px 4px",
+                                    height: "18px",
+                                    background: "rgba(255,0,85,0.1)",
+                                    border: "1px solid rgba(255,0,85,0.4)",
+                                    color: "#ff3366",
+                                    cursor: "pointer",
+                                    borderRadius: "3px",
+                                    display: "flex",
+                                    alignItems: "center"
+                                  }}
+                                >
+                                  <Trash2 size={10} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2. Color Palettes */}
+                  <div className="package-manager-panel font-sans" style={{
+                    padding: "10px",
+                    background: "rgba(255, 0, 127, 0.03)",
+                    border: "1px solid rgba(255, 0, 127, 0.15)",
+                    borderRadius: "8px",
+                    fontSize: "11px"
+                  }}>
+                    <h4 style={{ margin: "0 0 8px 0", color: "#ff007f", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>🎨 {t("modelAssembler.packageManager.colorsTitle") || "Quản Lý Gói Màu (Palettes)"}</span>
+                    </h4>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <label className="btn btn-secondary cursor-pointer" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', padding: '4px 8px', gap: '4px', height: '22px', background: 'rgba(255,0,127,0.1)', border: '1px solid rgba(255,0,127,0.4)', color: '#ff007f', borderRadius: '4px', fontWeight: 'bold' }}>
+                          <Upload size={10} /> {t('sidebar.btnImportPalette') || 'Nạp Gói Màu'}
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handlePaletteUploadGlobal}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
                         <button
-                          className="btn btn-secondary btn-small"
-                          onClick={() => loadedPackages.includes("Nyan Cat") ? unloadPackage("Nyan Cat") : loadPackage("Nyan Cat")}
-                          style={{
-                            padding: "2px 6px",
-                            fontSize: "9px",
-                            height: "18px",
-                            background: loadedPackages.includes("Nyan Cat") ? "rgba(255,0,127,0.1)" : "rgba(0,229,255,0.1)",
-                            border: loadedPackages.includes("Nyan Cat") ? "1px solid rgba(255,0,127,0.4)" : "1px solid rgba(0,229,255,0.4)",
-                            color: loadedPackages.includes("Nyan Cat") ? "#ff3366" : "#00e5ff",
-                            cursor: "pointer",
-                            borderRadius: "3px"
-                          }}
+                          className="btn btn-primary"
+                          style={{ flex: 1, fontSize: '9px', padding: '4px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', height: '22px', borderRadius: '4px' }}
+                          onClick={() => setIsCreatingPalette(!isCreatingPalette)}
                         >
-                          {loadedPackages.includes("Nyan Cat") ? (t("modelAssembler.packageManager.unload") || "Unload") : (t("modelAssembler.packageManager.load") || "Load")}
+                          {t('sidebar.btnCreatePalette') || '➕ Tạo Gói Màu'}
                         </button>
                       </div>
-                    </div>
 
-                    {/* Custom Packages */}
-                    {customPackages.length === 0 ? (
-                      <div style={{ textAlign: "center", color: "#666", padding: "4px 0" }}>
-                        {t("modelAssembler.packageManager.noCustom") || "Chưa có package tự tạo nào"}
-                      </div>
-                    ) : (
-                      customPackages.map((pkg) => {
-                        const isLoaded = loadedPackages.includes(pkg);
-                        const partsInPkg = Object.keys(customParts).filter(k => (customParts[k].package || "My Custom") === pkg).length;
-                        return (
-                          <div key={pkg} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 6px", background: "rgba(255,255,255,0.04)", borderRadius: "4px", gap: "6px" }}>
-                            <span style={{ color: "#fff", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", flex: 1 }} title={pkg}>
-                              📦 {pkg} ({partsInPkg})
+                      {/* Collapsible Palette Creator Panel */}
+                      {isCreatingPalette && (
+                        <div className="palette-creator-panel font-sans animate-slide-down" style={{
+                          background: 'rgba(255,0,127,0.03)',
+                          border: '1px dashed rgba(255,0,127,0.25)',
+                          borderRadius: '8px',
+                          padding: '10px',
+                          marginTop: '4px',
+                          fontSize: '11px'
+                        }}>
+                          <div style={{ color: '#ff007f', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            🎨 {t('sidebar.paletteCreatorTitle') || 'Thiết Kế Gói Màu Mới'}:
+                          </div>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <input
+                              type="text"
+                              className="input-text"
+                              style={{ fontSize: '11px', padding: '6px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border-glow)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box', width: '100%' }}
+                              value={newPaletteName}
+                              onChange={(e) => setNewPaletteName(e.target.value)}
+                              placeholder={t('pixelEditor.savePalettePlaceholder') || 'Tên gói màu mới...'}
+                            />
+
+                            {/* Color bubbles list */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', padding: '8px' }}>
+                              {Object.keys(newPaletteColors).map((k) => {
+                                const idx = parseInt(k);
+                                const hex = newPaletteColors[k];
+                                return (
+                                  <div
+                                    key={k}
+                                    style={{
+                                      position: 'relative',
+                                      width: '24px',
+                                      height: '24px',
+                                      borderRadius: '4px',
+                                      backgroundColor: hex,
+                                      border: '1px solid rgba(255,255,255,0.15)',
+                                      cursor: 'pointer'
+                                    }}
+                                    title={`Màu #${idx}: ${hex}`}
+                                  >
+                                    <input
+                                      type="color"
+                                      value={hex}
+                                      onChange={(e) => handleNewPaletteColorChange(idx, e.target.value)}
+                                      style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        opacity: 0,
+                                        cursor: 'pointer'
+                                      }}
+                                    />
+                                    {/* Remove bubble button */}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveNewPaletteColor(idx);
+                                      }}
+                                      style={{
+                                        position: 'absolute',
+                                        top: '-6px',
+                                        right: '-6px',
+                                        width: '12px',
+                                        height: '12px',
+                                        borderRadius: '50%',
+                                        background: '#ff3366',
+                                        border: 'none',
+                                        color: '#fff',
+                                        fontSize: '8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        padding: 0
+                                      }}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button
+                                className="btn btn-secondary btn-small"
+                                style={{ flex: 1, fontSize: '9px', padding: '4px 0', height: '22px' }}
+                                onClick={handleAddNewPaletteColor}
+                              >
+                                {t('sidebar.btnAddColor') || '➕ Thêm Màu'}
+                              </button>
+                              <button
+                                className="btn btn-primary btn-glow"
+                                style={{ flex: 1.2, fontSize: '9px', padding: '4px 0', height: '22px', background: 'linear-gradient(135deg, #7928ca 0%, #ff007f 100%)', color: '#fff', border: 'none' }}
+                                onClick={handleSaveAndExportPalette}
+                              >
+                                {t('sidebar.btnSaveAndExport') || '💾 Lưu & Tải JSON'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {Object.keys(customPalettes).length === 0 ? (
+                        <div style={{ textAlign: "center", color: "#666", padding: "4px 0" }}>
+                          {t("modelAssembler.packageManager.noPalettes") || "Chưa có gói màu tùy biến nào"}
+                        </div>
+                      ) : (
+                        Object.keys(customPalettes).map((name) => (
+                          <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 6px", background: "rgba(255,255,255,0.04)", borderRadius: "4px", gap: "6px" }}>
+                            <span style={{ color: "#fff", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", flex: 1 }} title={name}>
+                              🎨 {name}
                             </span>
                             <div style={{ display: "flex", gap: "4px" }}>
                               <button
-                                className="btn btn-secondary btn-small"
-                                onClick={() => isLoaded ? unloadPackage(pkg) : loadPackage(pkg)}
+                                onClick={() => handleExportPaletteGlobal(name)}
                                 style={{
-                                  padding: "2px 6px",
-                                  fontSize: "9px",
-                                  height: "18px",
-                                  background: isLoaded ? "rgba(255,0,127,0.1)" : "rgba(0,229,255,0.1)",
-                                  border: isLoaded ? "1px solid rgba(255,0,127,0.4)" : "1px solid rgba(0,229,255,0.4)",
-                                  color: isLoaded ? "#ff3366" : "#00e5ff",
-                                  cursor: "pointer",
-                                  borderRadius: "3px"
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#00ffff',
+                                  cursor: 'pointer',
+                                  padding: '2px 4px',
+                                  fontSize: '11px',
+                                  display: 'flex',
+                                  alignItems: 'center'
                                 }}
+                                title={t('sidebar.tooltipExportPalette') || "Tải tệp JSON gói màu về máy"}
                               >
-                                {isLoaded ? (t("modelAssembler.packageManager.unload") || "Unload") : (t("modelAssembler.packageManager.load") || "Load")}
+                                📤
                               </button>
                               <button
                                 className="btn btn-secondary btn-small"
-                                onClick={() => {
-                                  if (window.confirm(t("modelAssembler.packageManager.confirmDelete", { name: pkg }) || `Xóa vĩnh viễn package "${pkg}" và tất cả linh kiện bên trong?`)) {
-                                    deletePackage(pkg);
-                                  }
-                                }}
+                                onClick={() => handlePaletteDeleteGlobal(name)}
                                 style={{
                                   padding: "2px 4px",
                                   height: "18px",
@@ -2225,9 +2560,9 @@ export default function ModelAssembler() {
                               </button>
                             </div>
                           </div>
-                        );
-                      })
-                    )}
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -2280,7 +2615,7 @@ export default function ModelAssembler() {
                                         }}
                                         style={{ width: "100%", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                                       >
-                                        {renderMiniPartPreview(part.data, part.width, part.height)}
+                                        {renderMiniPartPreview(part.data, part.width, part.height, part.palette)}
                                       </div>
                                       <span
                                         className="add-title"
@@ -2490,7 +2825,7 @@ export default function ModelAssembler() {
                                       }}
                                       style={{ width: "100%", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                                     >
-                                      {renderMiniPartPreview(part.data, part.width, part.height)}
+                                      {renderMiniPartPreview(part.data, part.width, part.height, part.palette)}
                                     </div>
                                     <span
                                       className="add-title"
@@ -3205,6 +3540,17 @@ export default function ModelAssembler() {
                             title={t("modelAssembler.layers.btnDuplicateTitle")}
                           >
                             <Copy size={12} />
+                          </button>
+                          <button
+                            className="btn-layer-action"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingPartKey(layer.partName);
+                              setIsDrawingModalOpen(true);
+                            }}
+                            title={t("modelAssembler.customParts.btnEditTitle") || "Sửa"}
+                          >
+                            <Edit2 size={12} />
                           </button>
                           <button
                             className="btn-layer-action delete"

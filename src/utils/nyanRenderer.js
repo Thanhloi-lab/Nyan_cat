@@ -212,6 +212,9 @@ export class NyanCatModel {
     
     // Custom parts mapping object (holds 2D array mappings)
     this.customPartsMapping = options.customPartsMapping || {};
+    this.customParts = options.customParts || {};
+    this.bindings = options.bindings || {};
+    this.liveEditingPalette = null;
     this.headDx = options.headDx !== undefined ? options.headDx : 12;
     this.headDy = options.headDy !== undefined ? options.headDy : 0;
   }
@@ -285,11 +288,32 @@ export class NyanCatModel {
     const px = this.x;
     const py = this.y + bob;
 
+    // Helper to get color map for a specific slot/part
+    const getColorsForSlot = (slotKey) => {
+      // Prioritize live editing palette if it matches the slot we are rendering
+      if (this.liveEditingPalette && this.liveEditingPalette.palette) {
+        // Find if this live editing part key matches our slot key via bindings
+        const bindingKey = this.bindings ? this.bindings[slotKey] : null;
+        if (bindingKey === this.liveEditingPalette.key) {
+          return { ...colors, ...this.liveEditingPalette.palette };
+        }
+      }
+      
+      const partKey = this.bindings ? this.bindings[slotKey] : null;
+      if (partKey && partKey !== 'default' && this.customParts && this.customParts[partKey]) {
+        const customPart = this.customParts[partKey];
+        if (customPart.palette) {
+          return { ...colors, ...customPart.palette };
+        }
+      }
+      return colors;
+    };
+
     // --- 1. Draw Tail ---
     const ta = TAIL_ANIM[frame];
-    // Use custom tail frame if assigned, otherwise use default
     const tailGrid = this.customPartsMapping[ta.shape] || DEFAULT_SPRITES[ta.shape];
-    this.drawGrid(ctx, tailGrid, px + ta.dx * s, py + ta.dy * s, colors);
+    const tailColors = getColorsForSlot(ta.shape);
+    this.drawGrid(ctx, tailGrid, px + ta.dx * s, py + ta.dy * s, tailColors);
 
     // --- 2. Draw Legs ---
     const legAnim = LEG_ANIM[frame];
@@ -298,21 +322,24 @@ export class NyanCatModel {
     for (let i = 0; i < 4; i++) {
       const key = legKeys[legAnim[i]];
       const legGrid = this.customPartsMapping[key] || DEFAULT_SPRITES[key];
-      this.drawGrid(ctx, legGrid, px + (LEG_DX[i] + legXOffsets[frame]) * s, py + DEFAULT_SPRITES.POPTART.length * s, colors);
+      const legColors = getColorsForSlot(key);
+      this.drawGrid(ctx, legGrid, px + (LEG_DX[i] + legXOffsets[frame]) * s, py + DEFAULT_SPRITES.POPTART.length * s, legColors);
     }
 
     // --- 3. Draw Pop-Tart Body ---
     const popGrid = this.customPartsMapping.POPTART || DEFAULT_SPRITES.POPTART;
-    this.drawGrid(ctx, popGrid, px, py, colors);
+    const popColors = getColorsForSlot('POPTART');
+    this.drawGrid(ctx, popGrid, px, py, popColors);
 
     // --- 4. Draw Cat Head ---
     const activeHeadKey = this.isBlinking ? 'HEAD_BLINK' : 'HEAD_OPEN';
     const headGrid = this.customPartsMapping[activeHeadKey] || DEFAULT_SPRITES[activeHeadKey];
+    const headColors = getColorsForSlot(activeHeadKey);
     
     const visibleHeadHeight = this.getVisibleHeight(headGrid);
     const finalHeadDy = (DEFAULT_SPRITES.POPTART.length - visibleHeadHeight) + this.headDy;
     const headXOffsets = [-1, 0, 1, 0];
-    this.drawGrid(ctx, headGrid, px + (this.headDx + headXOffsets[frame]) * s, py + finalHeadDy * s, colors);
+    this.drawGrid(ctx, headGrid, px + (this.headDx + headXOffsets[frame]) * s, py + finalHeadDy * s, headColors);
   }
 }
 

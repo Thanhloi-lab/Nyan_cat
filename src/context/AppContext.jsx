@@ -91,6 +91,27 @@ export const AppProvider = ({ children }) => {
     return upgraded;
   });
 
+  // 1.5 Custom Color Palettes state (Imported by user)
+  // Structured as: { [paletteName]: { 1: string, 2: string, ... } }
+  const [customPalettes, setCustomPalettes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nyan_studio_custom_palettes');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return {};
+  });
+
+  // Sync customPalettes to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('nyan_studio_custom_palettes', JSON.stringify(customPalettes));
+    } catch (e) {
+      console.error('Failed to save custom palettes:', e);
+    }
+  }, [customPalettes]);
+
   // Loaded Packages state
   const [loadedPackages, setLoadedPackages] = useState(() => {
     try {
@@ -242,13 +263,20 @@ export const AppProvider = ({ children }) => {
 
   const t = (key, vars) => tFor(settings.language, key, vars);
 
-  // Add/Update a custom part
-  const saveCustomPart = (name, width, height, data, packageName = 'My Custom') => {
+  const saveCustomPart = (name, width, height, data, packageName = 'My Custom', palette = null, colorLabels = null) => {
     const key = name.trim().replace(/\s+/g, '_').toLowerCase();
     const pkg = packageName.trim() || 'My Custom';
     setCustomParts((prev) => ({
       ...prev,
-      [key]: { name: name.trim(), width, height, data, package: pkg }
+      [key]: { 
+        name: name.trim(), 
+        width, 
+        height, 
+        data, 
+        package: pkg, 
+        ...(palette ? { palette } : {}),
+        ...(colorLabels ? { colorLabels } : {}) 
+      }
     }));
     // Auto-load the package
     setLoadedPackages((prev) => {
@@ -258,6 +286,28 @@ export const AppProvider = ({ children }) => {
       return prev;
     });
     return key;
+  };
+
+  // Load / Import custom palette from JSON
+  const importCustomPalette = (paletteName, colors, labels = null) => {
+    const colorsObj = colors.colors ? colors.colors : colors;
+    const labelsObj = colors.labels ? colors.labels : (labels || {});
+    setCustomPalettes((prev) => ({
+      ...prev,
+      [paletteName]: {
+        colors: colorsObj,
+        labels: labelsObj
+      }
+    }));
+  };
+
+  // Delete custom palette from library
+  const deleteCustomPalette = (paletteName) => {
+    setCustomPalettes((prev) => {
+      const copy = { ...prev };
+      delete copy[paletteName];
+      return copy;
+    });
   };
 
   // Delete a custom part from library
@@ -805,7 +855,10 @@ export const AppProvider = ({ children }) => {
         loadedPackages,
         loadPackage,
         unloadPackage,
-        deletePackage
+        deletePackage,
+        customPalettes,
+        importCustomPalette,
+        deleteCustomPalette
       }}
     >
       {children}

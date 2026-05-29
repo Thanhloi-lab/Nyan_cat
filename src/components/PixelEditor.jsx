@@ -23,14 +23,19 @@ export default function PixelEditor({ editingPartKey, onClose }) {
     getDefaultSpriteData, 
     settings, 
     liveEditingPartRef,
-    bindPartToSlot,
-    bindings,
     setToastMessage,
     loadedPackages,
-    t
+    t,
+    customPalettes,
+    importCustomPalette,
+    deleteCustomPalette
   } = useContext(AppContext);
 
   const isReadOnly = !!(editingPartKey && DEFAULT_SPRITES[editingPartKey] && !customParts[editingPartKey]);
+
+  const [selectedPaletteName, setSelectedPaletteName] = useState('default');
+
+
 
   // Editor states
   const [partName, setPartName] = useState('My_Custom_Part');
@@ -39,7 +44,6 @@ export default function PixelEditor({ editingPartKey, onClose }) {
   const [gridData, setGridData] = useState(() =>
     Array(13).fill().map(() => Array(16).fill(0))
   );
-  const [selectedSlot, setSelectedSlot] = useState('none');
 
   const [packageName, setPackageName] = useState('My Custom');
   const [isCreatingNewPackage, setIsCreatingNewPackage] = useState(false);
@@ -56,15 +60,19 @@ export default function PixelEditor({ editingPartKey, onClose }) {
   useEffect(() => {
     if (liveEditingPartRef) {
       const key = partName.trim().replace(/\s+/g, '_').toLowerCase();
-      liveEditingPartRef.current = { key, data: gridData };
+      const activePalette = selectedPaletteName !== 'default' && customPalettes[selectedPaletteName]
+        ? customPalettes[selectedPaletteName]
+        : null;
+      liveEditingPartRef.current = { key, data: gridData, palette: activePalette };
     }
-  }, [partName, gridData, liveEditingPartRef]);
+  }, [partName, gridData, selectedPaletteName, customPalettes, liveEditingPartRef]);
   
   const [activeColor, setActiveColor] = useState(1); // Default to black outline
   const [isDrawing, setIsDrawing] = useState(false);
   const [presetTemplate, setPresetTemplate] = useState('HEAD_OPEN');
 
   const gridContainerRef = useRef(null);
+  const lastLoadedKeyRef = useRef(Symbol('initial'));
 
   // Apply a template to the editor grid
   const loadTemplate = useCallback((templateKey) => {
@@ -75,8 +83,28 @@ export default function PixelEditor({ editingPartKey, onClose }) {
     setPartName(`custom_${templateKey.toLowerCase()}`);
   }, [getDefaultSpriteData]);
 
-  // Run on mount or when editingPartKey changes to load either template, custom part, or default template sprite
+
+
+  const [paletteSaveName, setPaletteSaveName] = useState('');
+  const [localColors, setLocalColors] = useState({
+    1: '#000000',
+    2: '#999999',
+    3: '#777777',
+    4: '#dd8855',
+    5: '#ff99cc',
+    6: '#ff3399',
+    7: '#ffffff',
+    8: '#ff9999'
+  });
+  const [localColorLabels, setLocalColorLabels] = useState({});
+
   useEffect(() => {
+    // Only load if editingPartKey actually changed
+    if (lastLoadedKeyRef.current === editingPartKey) {
+      return;
+    }
+    lastLoadedKeyRef.current = editingPartKey;
+
     if (editingPartKey) {
       const part = customParts[editingPartKey];
       if (part) {
@@ -86,32 +114,32 @@ export default function PixelEditor({ editingPartKey, onClose }) {
         setGridData(JSON.parse(JSON.stringify(part.data)));
         setPackageName(part.package || 'My Custom');
         setIsCreatingNewPackage(false);
-        
-        // Auto-detect if this part is bound to any slot
-        let foundSlot = 'none';
-        const isHeadOpen = bindings.HEAD_OPEN === editingPartKey;
-        const isHeadBlink = bindings.HEAD_BLINK === editingPartKey;
-        const isTailUp = bindings.TAIL_UP === editingPartKey;
-        const isTailMid = bindings.TAIL_MID === editingPartKey;
-        const isTailDown = bindings.TAIL_DOWN === editingPartKey;
-        const isLegDown = bindings.LEG_DOWN === editingPartKey;
-        const isLegFront = bindings.LEG_FRONT === editingPartKey;
-        const isLegBack = bindings.LEG_BACK === editingPartKey;
 
-        if (isHeadOpen && isHeadBlink) foundSlot = 'HEAD_ALL';
-        else if (isTailUp && isTailMid && isTailDown) foundSlot = 'TAIL_ALL';
-        else if (isLegDown && isLegFront && isLegBack) foundSlot = 'LEG_ALL';
-        else if (isHeadOpen) foundSlot = 'HEAD_OPEN';
-        else if (isHeadBlink) foundSlot = 'HEAD_BLINK';
-        else if (bindings.POPTART === editingPartKey) foundSlot = 'POPTART';
-        else if (isTailUp) foundSlot = 'TAIL_UP';
-        else if (isTailMid) foundSlot = 'TAIL_MID';
-        else if (isTailDown) foundSlot = 'TAIL_DOWN';
-        else if (isLegDown) foundSlot = 'LEG_DOWN';
-        else if (isLegFront) foundSlot = 'LEG_FRONT';
-        else if (isLegBack) foundSlot = 'LEG_BACK';
-        
-        setSelectedSlot(foundSlot);
+        if (part.palette) {
+          setLocalColors(JSON.parse(JSON.stringify(part.palette)));
+          const paletteName = part.paletteName || `${part.name} Palette`;
+          importCustomPalette(paletteName, part.palette, part.colorLabels || {});
+        } else {
+          const skin = PALETTES.skins[settings.skinStyle] || PALETTES.skins.classic;
+          const pop  = PALETTES.poptarts[settings.poptartStyle] || PALETTES.poptarts.strawberry;
+          setLocalColors({
+            1: '#000000',
+            2: settings.customSkinColor || skin.fill,
+            3: settings.customSkinShadow || skin.shadow,
+            4: settings.customCrustColor || pop.crust,
+            5: settings.customFrostingColor || pop.frosting,
+            6: settings.customSprinkleColor || pop.sprinkle,
+            7: '#ffffff',
+            8: '#ff9999'
+          });
+        }
+
+        if (part.colorLabels) {
+          setLocalColorLabels(JSON.parse(JSON.stringify(part.colorLabels)));
+        } else {
+          setLocalColorLabels({});
+        }
+        setSelectedPaletteName('default');
       } else if (DEFAULT_SPRITES[editingPartKey]) {
         // Load default template sprite data
         const preset = getDefaultSpriteData(editingPartKey);
@@ -122,34 +150,125 @@ export default function PixelEditor({ editingPartKey, onClose }) {
         setPackageName('Nyan Cat');
         setIsCreatingNewPackage(false);
 
-        // Pre-select slot if name matches exactly
-        let foundSlot = 'none';
-        if (bindings[editingPartKey] !== undefined || editingPartKey === 'POPTART') {
-          foundSlot = editingPartKey;
-        }
-        setSelectedSlot(foundSlot);
+        const skin = PALETTES.skins[settings.skinStyle] || PALETTES.skins.classic;
+        const pop  = PALETTES.poptarts[settings.poptartStyle] || PALETTES.poptarts.strawberry;
+        setLocalColors({
+          1: '#000000',
+          2: settings.customSkinColor || skin.fill,
+          3: settings.customSkinShadow || skin.shadow,
+          4: settings.customCrustColor || pop.crust,
+          5: settings.customFrostingColor || pop.frosting,
+          6: settings.customSprinkleColor || pop.sprinkle,
+          7: '#ffffff',
+          8: '#ff9999'
+        });
+        setLocalColorLabels({});
+        setSelectedPaletteName('default');
       }
     } else {
+      // New part
       loadTemplate('HEAD_OPEN');
       setPackageName('My Custom');
       setIsCreatingNewPackage(false);
-    }
-  }, [editingPartKey, customParts, bindings, loadTemplate, getDefaultSpriteData]);
 
-  // Get current palette color values for display
+      const skin = PALETTES.skins[settings.skinStyle] || PALETTES.skins.classic;
+      const pop  = PALETTES.poptarts[settings.poptartStyle] || PALETTES.poptarts.strawberry;
+      setLocalColors({
+        1: '#000000',
+        2: settings.customSkinColor || skin.fill,
+        3: settings.customSkinShadow || skin.shadow,
+        4: settings.customCrustColor || pop.crust,
+        5: settings.customFrostingColor || pop.frosting,
+        6: settings.customSprinkleColor || pop.sprinkle,
+        7: '#ffffff',
+        8: '#ff9999'
+      });
+      setLocalColorLabels({});
+      setSelectedPaletteName('default');
+    }
+  }, [editingPartKey, customParts, settings, loadTemplate, getDefaultSpriteData, importCustomPalette]);
+
   const skin = PALETTES.skins[settings.skinStyle] || PALETTES.skins.classic;
   const pop  = PALETTES.poptarts[settings.poptartStyle] || PALETTES.poptarts.strawberry;
+  const currentTemplateColors = selectedPaletteName !== 'default' && customPalettes[selectedPaletteName]
+    ? (customPalettes[selectedPaletteName].colors || customPalettes[selectedPaletteName])
+    : {
+        1: '#000000',
+        2: settings.customSkinColor || skin.fill,
+        3: settings.customSkinShadow || skin.shadow,
+        4: settings.customCrustColor || pop.crust,
+        5: settings.customFrostingColor || pop.frosting,
+        6: settings.customSprinkleColor || pop.sprinkle,
+        7: '#ffffff',
+        8: '#ff9999'
+      };
+
+  const currentTemplateLabels = selectedPaletteName !== 'default' && customPalettes[selectedPaletteName]
+    ? (customPalettes[selectedPaletteName].labels || {})
+    : {};
+
+  const handleSelectTemplateColor = (hex) => {
+    // Check if color is already in localColors
+    const existingIdx = Object.keys(localColors).find(
+      (k) => localColors[k].toLowerCase() === hex.toLowerCase()
+    );
+    if (existingIdx) {
+      setActiveColor(parseInt(existingIdx));
+      setToastMessage(t('pixelEditor.toasts.colorSelected', { index: existingIdx }) || `🎨 Đã chọn cọ màu #${existingIdx}`);
+    } else {
+      // Add to localColors with next index
+      const nextIdx = Math.max(0, ...Object.keys(localColors).map(Number)) + 1;
+      setLocalColors((prev) => ({
+        ...prev,
+        [nextIdx]: hex
+      }));
+      setActiveColor(nextIdx);
+      setToastMessage(t('pixelEditor.toasts.colorAdded', { index: nextIdx }) || `🎨 Đã thêm màu mới vào cọ vẽ #${nextIdx}!`);
+    }
+  };
+
+  const handleSavePalettePackage = () => {
+    const name = paletteSaveName.trim();
+    if (!name) {
+      alert(t('pixelEditor.errors.missingPaletteName') || '⚠️ Vui lòng nhập tên gói màu!');
+      return;
+    }
+    importCustomPalette(name, { ...localColors }, { ...localColorLabels });
+    setSelectedPaletteName(name);
+    setPaletteSaveName('');
+    setToastMessage(t('pixelEditor.toasts.paletteSaved', { name }) || `🎨 Đã lưu gói màu "${name}" vào thư viện!`);
+  };
 
   const colorMap = {
     0: 'transparent',
-    1: '#000000',
-    2: settings.customSkinColor || skin.fill,
-    3: settings.customSkinShadow || skin.shadow,
-    4: settings.customCrustColor || pop.crust,
-    5: settings.customFrostingColor || pop.frosting,
-    6: settings.customSprinkleColor || pop.sprinkle,
-    7: '#ffffff',
-    8: '#ff9999'
+    ...localColors
+  };
+
+  const handleColorChange = (idx, hex) => {
+    setLocalColors(prev => ({ ...prev, [idx]: hex }));
+  };
+
+  const handleRemoveBrush = (idx) => {
+    setLocalColors((prev) => {
+      const copy = { ...prev };
+      delete copy[idx];
+      return copy;
+    });
+    setLocalColorLabels((prev) => {
+      const copy = { ...prev };
+      delete copy[idx];
+      return copy;
+    });
+    if (activeColor === idx) {
+      setActiveColor(0);
+    }
+  };
+
+  const handleUpdateColorLabel = (idx, newLabel) => {
+    setLocalColorLabels((prev) => ({
+      ...prev,
+      [idx]: newLabel
+    }));
   };
 
   // Handle grid size adjustment (preserving existing pixels)
@@ -228,27 +347,82 @@ export default function PixelEditor({ editingPartKey, onClose }) {
       return;
     }
 
-    const key = saveCustomPart(partName, gridWidth, gridHeight, gridData, finalPackage || 'My Custom');
+    // Always bake in the active color palette mapping inside the custom part JSON to guarantee color constancy
+    const activePalette = { ...localColors };
+
+    saveCustomPart(
+      partName,
+      gridWidth,
+      gridHeight,
+      gridData,
+      finalPackage || 'My Custom',
+      activePalette,
+      localColorLabels
+    );
     
-    // Auto-bind to selected motion slot
-    if (selectedSlot !== 'none') {
-      if (selectedSlot === 'HEAD_ALL') {
-        bindPartToSlot('HEAD_OPEN', key);
-        bindPartToSlot('HEAD_BLINK', key);
-      } else if (selectedSlot === 'TAIL_ALL') {
-        bindPartToSlot('TAIL_UP', key);
-        bindPartToSlot('TAIL_MID', key);
-        bindPartToSlot('TAIL_DOWN', key);
-      } else if (selectedSlot === 'LEG_ALL') {
-        bindPartToSlot('LEG_DOWN', key);
-        bindPartToSlot('LEG_FRONT', key);
-        bindPartToSlot('LEG_BACK', key);
-      } else {
-        bindPartToSlot(selectedSlot, key);
+    setToastMessage(t('pixelEditor.toasts.savedToLibrary', { name: partName }) || `💾 Đã lưu "${partName}" vào thư viện linh kiện thành công!`);
+  };
+
+  // Palette package import/export/delete handlers
+  const handlePaletteUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        const name = parsed.paletteName || file.name.replace('.json', '');
+        const colors = parsed.colors || parsed;
+        const labels = parsed.labels || {};
+        const keys = Object.keys(colors);
+        const isValid = keys.length > 0 && keys.every(k => typeof colors[k] === 'string' && colors[k].startsWith('#'));
+        if (!isValid) {
+          alert(t('pixelEditor.errors.invalidPalette') || '⚠️ File JSON không hợp lệ! Phải chứa các key trỏ tới mã màu HEX.');
+          return;
+        }
+        importCustomPalette(name, colors, labels);
+        setSelectedPaletteName(name);
+        setLocalColors({ ...colors });
+        setLocalColorLabels({ ...labels });
+        setToastMessage(t('pixelEditor.toasts.paletteLoaded', { name }) || `🎨 Đã nạp gói màu "${name}" thành công!`);
+      } catch (err) {
+        console.error(err);
+        alert(t('pixelEditor.errors.paletteParseError') || '❌ Lỗi khi đọc file JSON gói màu!');
       }
-      setToastMessage(t('pixelEditor.toasts.savedAndBound', { name: partName }) || `💾 Đã lưu "${partName}" và tự động gán vào chuyển động!`);
-    } else {
-      setToastMessage(t('pixelEditor.toasts.savedToLibrary', { name: partName }) || `💾 Đã lưu "${partName}" vào thư viện linh kiện thành công!`);
+    };
+    reader.readAsText(file);
+  };
+
+  const handlePaletteExport = () => {
+    if (selectedPaletteName === 'default') return;
+    const palette = customPalettes[selectedPaletteName];
+    if (!palette) return;
+    const colors = palette.colors || palette;
+    const labels = palette.labels || {};
+    const payload = {
+      paletteName: selectedPaletteName,
+      colors,
+      labels
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${selectedPaletteName.replace(/\s+/g, '_').toLowerCase()}_palette.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setToastMessage(t('pixelEditor.toasts.paletteExported') || '📤 Đã xuất gói màu thành công!');
+  };
+
+  const handlePaletteDelete = () => {
+    if (selectedPaletteName === 'default') return;
+    if (window.confirm(t('pixelEditor.confirm.deletePalette', { name: selectedPaletteName }) || `Gỡ bỏ gói màu "${selectedPaletteName}" khỏi danh sách?`)) {
+      const name = selectedPaletteName;
+      setSelectedPaletteName('default');
+      deleteCustomPalette(name);
+      setToastMessage(t('pixelEditor.toasts.paletteDeleted', { name }) || `🗑️ Đã gỡ gói màu "${name}".`);
     }
   };
 
@@ -462,99 +636,7 @@ export default function PixelEditor({ editingPartKey, onClose }) {
               </div>
             </div>
 
-            <div className="input-group" style={{ marginTop: '14px', marginBottom: '14px' }}>
-              <label style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '6px' }}>
-                🎬 {t('pixelEditor.motionSlotLabel') || 'Gán Chuyển Động (Motion Slot)'}
-              </label>
-              <select
-                className="select-custom"
-                value={selectedSlot}
-                onChange={(e) => setSelectedSlot(e.target.value)}
-                style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border-glow)', borderRadius: '4px', color: '#fff', padding: '8px 10px', fontSize: '12px' }}
-              >
-                <option value="none">❌ {t('pixelEditor.motionNone') || 'Không gán chuyển động'}</option>
-                <optgroup label="🐱 ĐẦU MÈO (HEAD)">
-                  <option value="HEAD_ALL">🌟 {t('pixelEditor.motionHeadAll') || 'Tất cả trạng thái Đầu (Mở & Nhắm)'}</option>
-                  <option value="HEAD_OPEN">👁️ {t('pixelEditor.motionHeadOpen') || 'Mắt Mở (HEAD_OPEN)'}</option>
-                  <option value="HEAD_BLINK">😑 {t('pixelEditor.motionHeadBlink') || 'Mắt Nhắm (HEAD_BLINK)'}</option>
-                </optgroup>
-                <optgroup label="🥞 THÂN BÁNH (BODY)">
-                  <option value="POPTART">🍪 {t('pixelEditor.motionPoptart') || 'Thân bánh Pop-Tart (POPTART)'}</option>
-                </optgroup>
-                <optgroup label="🐕 ĐUÔI MÈO (TAIL)">
-                  <option value="TAIL_ALL">🌟 {t('pixelEditor.motionTailAll') || 'Tất cả trạng thái Đuôi (Lên/Ngang/Xuống)'}</option>
-                  <option value="TAIL_UP">⬆️ {t('pixelEditor.motionTailUp') || 'Đuôi hướng lên (TAIL_UP)'}</option>
-                  <option value="TAIL_MID">➡️ {t('pixelEditor.motionTailMid') || 'Đuôi nằm ngang (TAIL_MID)'}</option>
-                  <option value="TAIL_DOWN">⬇️ {t('pixelEditor.motionTailDown') || 'Đuôi hướng xuống (TAIL_DOWN)'}</option>
-                </optgroup>
-                <optgroup label="🦵 CHÂN MÈO (LEGS)">
-                  <option value="LEG_ALL">🌟 {t('pixelEditor.motionLegAll') || 'Tất cả các Chân (Đứng/Trước/Sau)'}</option>
-                  <option value="LEG_DOWN">⬇️ {t('pixelEditor.motionLegDown') || 'Chân thẳng đứng (LEG_DOWN)'}</option>
-                  <option value="LEG_FRONT">↗️ {t('pixelEditor.motionLegFront') || 'Chân co trước (LEG_FRONT)'}</option>
-                  <option value="LEG_BACK">↖️ {t('pixelEditor.motionLegBack') || 'Chân co sau (LEG_BACK)'}</option>
-                </optgroup>
-              </select>
-            </div>
-
-            {/* Cyberpunk Dynamic Motion Info Card */}
-            {selectedSlot === 'none' ? (
-              <div className="custom-motion-info-card font-sans" style={{
-                marginBottom: '16px',
-                padding: '12px',
-                background: 'rgba(0, 229, 255, 0.05)',
-                border: '1px solid rgba(0, 229, 255, 0.2)',
-                borderRadius: '8px',
-                fontSize: '11px',
-                lineHeight: '1.6',
-                color: '#d0d9e0',
-                boxShadow: '0 4px 15px rgba(0, 229, 255, 0.05)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#00e5ff', fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>
-                  <span>💡</span>
-                  <span>{t('pixelEditor.motionFreeTitle') || 'Dành Cho Mô Hình Tự Do (Dog, Robot, Chim...)'}</span>
-                </div>
-                <p style={{ margin: '0 0 8px 0', color: '#a0aab5' }}>
-                  {t('pixelEditor.motionFreeDesc1') || 'Chọn "Không gán chuyển động" khi vẽ linh kiện của các mô hình tự do. Sau khi lưu, bạn sẽ thiết lập chuyển động riêng cho nó ở trang Assembler:'}
-                </p>
-                <div style={{ borderTop: '1px dashed rgba(0, 229, 255, 0.15)', paddingTop: '8px', marginTop: '4px' }}>
-                  <strong style={{ color: '#00e5ff', display: 'block', marginBottom: '6px' }}>{t('pixelEditor.motionFreeStepTitle') || 'Luồng tạo chuyển động tịnh tiến & hoán đổi part:'}</strong>
-                  <ol style={{ margin: 0, paddingLeft: '14px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <li>{t('pixelEditor.motionFreeStep1') || 'Vẽ các trạng thái linh kiện (ví dụ: vẽ mắt mở dog_head_open và mắt nhắm dog_head_blink) rồi lưu lại.'}</li>
-                    <li>{t('pixelEditor.motionFreeStep2') || 'Click nút 🚀 Custom Model Assembler ở thanh tiêu đề trên cùng để mở Studio lắp ráp.'}</li>
-                    <li>{t('pixelEditor.motionFreeStep3') || 'Tạo mới Profile (ví dụ: "DOG PROFILE").'}</li>
-                    <li>{t('pixelEditor.motionFreeStep4') || 'Thêm linh kiện chính (ví dụ: dog_head_open) vào Canvas dưới dạng một Layer.'}</li>
-                    <li>{t('pixelEditor.motionFreeStep5') || 'Tại cột điều chỉnh bên phải, tích chọn KÍCH HOẠT ở mục 🎭 Hoạt Ảnh & Chuyển Động Riêng.'}</li>
-                    <li>{t('pixelEditor.motionFreeStep6') || 'Thiết lập frame-by-frame: Ở mỗi Frame, tùy ý tịnh tiến tọa độ (dx, dy) hoặc hoán đổi linh kiện hiển thị (Part Swap, ví dụ đổi sang dog_head_blink ở Frame 2 để nhắm mắt).'}</li>
-                    <li>{t('pixelEditor.motionFreeStep7') || 'Bật ▶️ Chạy Thử Hoạt Ảnh ở góc trên Workspace để xem mô hình chuyển động thời gian thực ở tốc độ 6 FPS!'}</li>
-                  </ol>
-                </div>
-              </div>
-            ) : (
-              <div className="custom-motion-info-card font-sans" style={{
-                marginBottom: '16px',
-                padding: '12px',
-                background: 'rgba(255, 0, 127, 0.05)',
-                border: '1px solid rgba(255, 0, 127, 0.15)',
-                borderRadius: '8px',
-                fontSize: '11px',
-                lineHeight: '1.6',
-                color: '#f0d0e0',
-                boxShadow: '0 4px 15px rgba(255, 0, 127, 0.05)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff007f', fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>
-                  <span>⚡</span>
-                  <span>{t('pixelEditor.motionOverrideTitle') || 'Ghi Đè Chuyển Động Mặc Định Nyan Cat'}</span>
-                </div>
-                <p style={{ margin: '0 0 6px 0', color: '#d0a5bd' }}>
-                  {t('pixelEditor.motionOverrideDesc1', { slot: selectedSlot }) || `Linh kiện này sẽ tự động thay thế bộ phận mặc định tương ứng của chú mèo Nyan Cat ở vị trí ${selectedSlot}.`}
-                </p>
-                <p style={{ margin: 0, color: '#ff007f', fontWeight: 'bold' }}>
-                  {t('pixelEditor.motionOverrideDesc2') || '💡 Chú mèo Nyan Cat trên Dashboard sẽ tự động co duỗi và chuyển động linh kiện mới này theo đúng quỹ đạo nhún nhảy mặc định!'}
-                </p>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
               <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSave}>
                 <Save size={16} style={{ marginRight: 6 }} /> {t('pixelEditor.btnSave') || 'Save to My Library'}
               </button>
@@ -572,33 +654,277 @@ export default function PixelEditor({ editingPartKey, onClose }) {
           </div>
         )}
 
-        {/* Color Brushes List */}
+        {/* Unified Color Palette & Brushes Manager */}
         {!isReadOnly && (
           <div className="panel-section">
-            <h3>2. {t('pixelEditor.sectionBrushTitle') || 'Select Paint Brush'}</h3>
-            <div className="brushes-grid">
-              {Object.keys(COLOR_LABELS).map((colorIdxStr) => {
-                const idx = parseInt(colorIdxStr);
-                return (
-                  <div
-                    key={idx}
-                    className={`brush-item-card ${activeColor === idx ? 'active' : ''}`}
-                    onClick={() => setActiveColor(idx)}
+            <h3>2. {t('pixelEditor.sectionPaletteTitle') || 'Custom Color Palette & Brushes'}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              
+              {/* Select template palette */}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <select
+                  className="select-custom"
+                  style={{ flex: 1 }}
+                  value={selectedPaletteName}
+                  onChange={(e) => setSelectedPaletteName(e.target.value)}
+                >
+                  <option value="default">{t('pixelEditor.defaultPalette') || 'Default Nyan Theme (Dynamic)'}</option>
+                  {Object.keys(customPalettes).map((name) => (
+                    <option key={name} value={name}>
+                      🎨 {name}
+                    </option>
+                  ))}
+                </select>
+
+                <button 
+                  className="btn btn-secondary btn-small"
+                  style={{ padding: '0 10px', background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.3)', color: '#00e5ff', fontWeight: 'bold' }}
+                  onClick={() => {
+                    if (window.confirm(t('pixelEditor.confirm.applyPalette') || 'Áp dụng toàn bộ gói màu này làm bảng cọ vẽ hiện tại?')) {
+                      setLocalColors({ ...currentTemplateColors });
+                      setLocalColorLabels({ ...currentTemplateLabels });
+                      setToastMessage(t('pixelEditor.toasts.paletteApplied') || '🎨 Đã áp dụng gói màu vào cọ vẽ.');
+                    }
+                  }}
+                  title={t('pixelEditor.tooltipApplyPalette') || "Áp dụng toàn bộ gói màu làm cọ vẽ"}
+                >
+                  {t('pixelEditor.btnApplyPalette') || 'Apply All'}
+                </button>
+              </div>
+
+              {/* Clickable Template Color Bubbles */}
+              <div className="template-colors-bubbles font-sans" style={{ marginTop: '2px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {t('pixelEditor.templateColorsLabel') || 'Bảng Màu Mẫu (Click để lấy màu):'}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', padding: '8px' }}>
+                  {Object.keys(currentTemplateColors).map((k) => {
+                    const hex = currentTemplateColors[k];
+                    return (
+                      <div
+                        key={k}
+                        onClick={() => handleSelectTemplateColor(hex)}
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '4px',
+                          backgroundColor: hex,
+                          cursor: 'pointer',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                          transition: 'transform 0.1s ease',
+                        }}
+                        className="template-color-bubble"
+                        title={hex}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Color Brushes List */}
+              <div style={{ borderTop: '1px dashed rgba(255,255,255,0.06)', paddingTop: '10px', marginTop: '4px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  🎨 {t('pixelEditor.sectionBrushTitle') || 'Select Paint Brush'}:
+                </div>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                  {t('pixelEditor.brushHint') || '💡 Nhấp vào ô màu của cọ vẽ bất kỳ để sửa màu tùy chọn!'}
+                </p>
+                <div className="brushes-grid">
+                  {[0, ...Object.keys(localColors).map(Number).sort((a, b) => a - b)].map((idx) => {
+                    const label = localColorLabels[idx] !== undefined ? localColorLabels[idx] : (COLOR_LABELS[idx] || `Custom Color #${idx}`);
+                    return (
+                      <div
+                        key={idx}
+                        className={`brush-item-card ${activeColor === idx ? 'active' : ''}`}
+                        onClick={() => setActiveColor(idx)}
+                        style={{ position: 'relative' }}
+                      >
+                        {idx > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveBrush(idx);
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: '2px',
+                              right: '2px',
+                              width: '14px',
+                              height: '14px',
+                              borderRadius: '50%',
+                              background: 'rgba(255,51,102,0.12)',
+                              border: '1px solid rgba(255,51,102,0.25)',
+                              color: '#ff3366',
+                              fontSize: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              padding: 0,
+                              zIndex: 10,
+                              transition: 'all 0.15s ease'
+                            }}
+                            title={t('pixelEditor.tooltipDeleteBrush') || "Xóa cọ vẽ này"}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#ff3366';
+                              e.currentTarget.style.color = '#fff';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(255,51,102,0.12)';
+                              e.currentTarget.style.color = '#ff3366';
+                            }}
+                          >
+                            ✕
+                          </button>
+                        )}
+                        <div
+                          className={`brush-color-preview-box color-${idx}`}
+                          style={{
+                            backgroundColor: idx === 0 ? 'transparent' : colorMap[idx],
+                            border: idx === 0 ? '1px dashed #ffffff44' : 'none',
+                            position: 'relative'
+                          }}
+                        >
+                          {idx > 0 && (
+                            <input
+                              type="color"
+                              value={colorMap[idx] || '#000000'}
+                              onChange={(e) => handleColorChange(idx, e.target.value)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveColor(idx);
+                              }}
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                opacity: 0,
+                                cursor: 'pointer'
+                              }}
+                              title={t('pixelEditor.tooltipColorPicker') || "Nhấp vào để chọn màu tùy ý"}
+                            />
+                          )}
+                        </div>
+                        <div className="brush-meta">
+                          <span className="brush-number">#{idx}</span>
+                          {idx === 0 ? (
+                            <span className="brush-label">{label}</span>
+                          ) : (
+                            <input
+                              type="text"
+                              className="brush-label-input"
+                              value={label}
+                              onChange={(e) => handleUpdateColorLabel(idx, e.target.value)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                borderBottom: '1px dashed rgba(255,255,255,0.15)',
+                                color: '#fff',
+                                fontSize: '11px',
+                                padding: '2px 0',
+                                width: '100%',
+                                outline: 'none',
+                                boxSizing: 'border-box'
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <button
+                  className="btn btn-secondary btn-small"
+                  style={{ width: '100%', marginTop: '8px', border: '1px dashed rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.02)', color: '#00ffff' }}
+                  onClick={() => {
+                    const nextIdx = Math.max(0, ...Object.keys(localColors).map(Number)) + 1;
+                    setLocalColors(prev => ({ ...prev, [nextIdx]: '#ffffff' }));
+                    setActiveColor(nextIdx);
+                    setToastMessage(t('pixelEditor.toasts.colorAdded', { index: nextIdx }) || `🎨 Đã thêm màu mới vào cọ vẽ #${nextIdx}!`);
+                  }}
+                >
+                  ➕ {t('pixelEditor.btnAddBrush') || 'Thêm Cọ Màu Mới'}
+                </button>
+              </div>
+
+              {/* Save current brushes as a reusable package */}
+              <div className="save-palette-package-box font-sans" style={{ borderTop: '1px dashed rgba(255,255,255,0.06)', paddingTop: '10px', marginTop: '4px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  💾 {t('pixelEditor.savePaletteTitle') || 'Lưu cọ vẽ thành gói màu riêng:'}
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="text"
+                    className="input-text"
+                    style={{ flex: 1, fontSize: '11px', padding: '6px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border-glow)', color: '#fff', borderRadius: '4px' }}
+                    value={paletteSaveName}
+                    onChange={(e) => setPaletteSaveName(e.target.value)}
+                    placeholder={t('pixelEditor.savePalettePlaceholder') || 'Tên gói màu mới...'}
+                  />
+                  <button
+                    className="btn btn-primary btn-small"
+                    style={{ padding: '0 10px', fontSize: '11px' }}
+                    onClick={handleSavePalettePackage}
                   >
-                    <div
-                      className={`brush-color-preview-box color-${idx}`}
-                      style={{
-                        backgroundColor: idx === 0 ? 'transparent' : colorMap[idx],
-                        border: idx === 0 ? '1px dashed #ffffff44' : 'none'
-                      }}
-                    />
-                    <div className="brush-meta">
-                      <span className="brush-number">#{idx}</span>
-                      <span className="brush-label">{COLOR_LABELS[idx]}</span>
-                    </div>
-                  </div>
-                );
-              })}
+                    {t('pixelEditor.btnSavePalette') || 'Lưu Gói'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Package Load / Export buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                <label 
+                  className="btn btn-secondary btn-small" 
+                  style={{ 
+                    flex: 1, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    gap: '6px', 
+                    cursor: 'pointer', 
+                    fontSize: '11px',
+                    padding: '6px 12px',
+                    background: 'rgba(0, 255, 255, 0.05)',
+                    border: '1px solid rgba(0, 255, 255, 0.2)',
+                    color: '#00ffff'
+                  }}
+                >
+                  📥 {t('pixelEditor.btnImportPalette') || 'Nạp Gói Màu (.json)'}
+                  <input
+                    type="file"
+                    accept=".json"
+                    style={{ display: 'none' }}
+                    onChange={handlePaletteUpload}
+                  />
+                </label>
+
+                {selectedPaletteName !== 'default' && (
+                  <>
+                    <button 
+                      className="btn btn-secondary btn-small"
+                      style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.05)', fontSize: '11px' }}
+                      onClick={handlePaletteExport}
+                      title={t('pixelEditor.btnExportPalette') || "Xuất bảng màu JSON"}
+                    >
+                      📤
+                    </button>
+                    <button 
+                      className="btn btn-secondary btn-small"
+                      style={{ padding: '6px 10px', background: 'rgba(255,0,85,0.05)', color: '#ff3366', border: '1px solid rgba(255,0,85,0.2)', fontSize: '11px' }}
+                      onClick={handlePaletteDelete}
+                      title={t('pixelEditor.btnDeletePalette') || "Gỡ bảng màu này"}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </>
+                )}
+              </div>
+
             </div>
           </div>
         )}
@@ -606,7 +932,7 @@ export default function PixelEditor({ editingPartKey, onClose }) {
         {/* Live Matrix Exporter */}
         <div className="panel-section">
           <div className="section-header-compact">
-            <h3>3. {t('pixelEditor.sectionExportTitle') || 'Live Export Array Code'}</h3>
+            <h3>4. {t('pixelEditor.sectionExportTitle') || 'Live Export Array Code'}</h3>
             <button className="btn-icon-link" onClick={copyToClipboard} title="Copy code">
               <Copy size={14} /> {t('pixelEditor.btnCopy') || 'Copy'}
             </button>

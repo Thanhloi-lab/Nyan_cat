@@ -2,7 +2,7 @@ import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { NyanCatModel } from '../utils/nyanRenderer';
 import JSZip from 'jszip';
-import { Download, Upload, Video, Archive, FileText } from 'lucide-react';
+import { Download, Upload, Video, Archive, FileText, Paintbrush } from 'lucide-react';
 
 export default function ExportPanel() {
   const {
@@ -10,7 +10,13 @@ export default function ExportPanel() {
     exportProjectJson,
     importProjectJson,
     getActiveRenderPartsMapping,
-    t
+    customParts,
+    bindings,
+    t,
+    customPalettes,
+    importCustomPalette,
+    deleteCustomPalette,
+    setToastMessage
   } = useContext(AppContext);
 
   // Video recording states
@@ -42,7 +48,9 @@ export default function ExportPanel() {
         skinStyle: settings.skinStyle,
         poptartStyle: settings.poptartStyle,
         headDx: settings.headDx,
-        headDy: settings.headDy
+        headDy: settings.headDy,
+        customParts,
+        bindings
       });
 
       // Pass custom color variables
@@ -182,6 +190,44 @@ export default function ExportPanel() {
     reader.readAsText(file);
   };
 
+  // Global Palette upload & delete handlers
+  const handlePaletteUploadGlobal = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        const name = parsed.paletteName || file.name.replace('.json', '');
+        const colors = parsed.colors || parsed;
+        const labels = parsed.labels || {};
+        const keys = Object.keys(colors);
+        const isValid = keys.length > 0 && keys.every(k => typeof colors[k] === 'string' && colors[k].startsWith('#'));
+        if (!isValid) {
+          alert(t('pixelEditor.errors.invalidPalette') || '⚠️ File JSON không hợp lệ! Phải chứa các key trỏ tới mã màu HEX.');
+          return;
+        }
+        importCustomPalette(name, colors, labels);
+        if (setToastMessage) {
+          setToastMessage(t('pixelEditor.toasts.paletteLoaded', { name }) || `🎨 Đã nạp gói màu "${name}" thành công!`);
+        }
+      } catch (err) {
+        console.error(err);
+        alert(t('pixelEditor.errors.paletteParseError') || '❌ Lỗi khi đọc file JSON gói màu!');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handlePaletteDeleteGlobal = (name) => {
+    if (window.confirm(t('pixelEditor.confirm.deletePalette', { name }) || `Gỡ bỏ gói màu "${name}" khỏi danh sách?`)) {
+      deleteCustomPalette(name);
+      if (setToastMessage) {
+        setToastMessage(t('pixelEditor.toasts.paletteDeleted', { name }) || `🗑️ Đã gỡ gói màu "${name}".`);
+      }
+    }
+  };
+
   return (
     <div className="export-panel-layout font-sans">
       {/* Upper Pipeline Grid: GIF, PNG, Record Video */}
@@ -275,6 +321,68 @@ export default function ExportPanel() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Card 4: Palette Package Manager */}
+        <div className="pipeline-card glass-card">
+          <div className="pipeline-header">
+            <div className="icon-wrapper bg-magenta" style={{ background: 'linear-gradient(135deg, #7928ca 0%, #ff007f 100%)' }}>
+              <Paintbrush size={20} style={{ color: '#fff' }} />
+            </div>
+            <span className="card-tag">PALETTE</span>
+          </div>
+          <h3>{t('exportPanel.paletteTitle') || 'Quản Lý Gói Màu (Palette Manager)'}</h3>
+          <p>{t('exportPanel.paletteDesc') || 'Nạp gói màu sắc tùy chỉnh từ tệp tin JSON để sử dụng rộng rãi khi thiết kế linh kiện.'}</p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', marginTop: '12px' }}>
+            <label className="btn btn-primary btn-glow cursor-pointer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+              <Upload size={14} style={{ marginRight: 6 }} /> {t('exportPanel.btnImportPalette') || '📥 Nạp Gói Màu JSON'}
+              <input
+                type="file"
+                accept=".json"
+                onChange={handlePaletteUploadGlobal}
+                style={{ display: 'none' }}
+              />
+            </label>
+
+            {Object.keys(customPalettes).length > 0 && (
+              <div className="palette-loaded-list animate-fade-in" style={{ 
+                background: 'rgba(0,0,0,0.3)', 
+                borderRadius: '8px', 
+                padding: '10px', 
+                maxHeight: '120px', 
+                overflowY: 'auto',
+                border: '1px solid rgba(255,255,255,0.05)',
+                fontSize: '11px',
+                textAlign: 'left'
+              }}>
+                <div style={{ color: '#ff007f', fontWeight: 'bold', marginBottom: '6px', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {t('exportPanel.loadedPalettes') || 'Các gói màu đã nạp'}:
+                </div>
+                {Object.keys(customPalettes).map((name) => (
+                  <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                    <span style={{ color: '#00ffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>
+                      🎨 {name}
+                    </span>
+                    <button
+                      onClick={() => handlePaletteDeleteGlobal(name)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#ff3366',
+                        cursor: 'pointer',
+                        padding: '2px 6px',
+                        fontSize: '11px'
+                      }}
+                      title="Gỡ gói màu"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

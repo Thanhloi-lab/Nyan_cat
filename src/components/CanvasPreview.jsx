@@ -17,6 +17,7 @@ export default function CanvasPreview() {
     customParts,
     getActiveRenderPartsMapping,
     liveEditingPartRef,
+    bindings,
   } = useContext(AppContext);
 
   const canvasRef = useRef(null);
@@ -64,6 +65,8 @@ export default function CanvasPreview() {
       poptartStyle: settings.poptartStyle,
       headDx: settings.headDx,
       headDy: settings.headDy,
+      customParts,
+      bindings,
     });
 
     renderStateRef.current.lastTime = performance.now();
@@ -131,6 +134,16 @@ export default function CanvasPreview() {
 
           // Fetch user-drawn custom mappings
           nyanCat.customPartsMapping = getActiveRenderPartsMapping();
+          nyanCat.customParts = customParts;
+          nyanCat.bindings = bindings;
+          if (liveEditingPartRef.current && liveEditingPartRef.current.palette) {
+            nyanCat.liveEditingPalette = {
+              key: liveEditingPartRef.current.key,
+              palette: liveEditingPartRef.current.palette
+            };
+          } else {
+            nyanCat.liveEditingPalette = null;
+          }
 
           // Advance model timeline states
           if (state.isPlaying) {
@@ -265,7 +278,7 @@ export default function CanvasPreview() {
     return () => {
       if (animationId) cancelAnimationFrame(animationId);
     };
-  }, [settings, background, layers, customParts, getActiveRenderPartsMapping, liveEditingPartRef]);
+  }, [settings, background, layers, customParts, bindings, getActiveRenderPartsMapping, liveEditingPartRef]);
 
   const togglePlayPause = () => {
     setIsPlaying(!isPlaying);

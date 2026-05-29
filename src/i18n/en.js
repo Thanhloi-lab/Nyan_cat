@@ -47,7 +47,16 @@ const en = {
     rainbowStyle: 'Rainbow Trail Wave Style',
     motionBindings: 'MOTION SLOT BINDINGS',
     motionBindingsDesc: 'Bind your custom sprites (My Custom Sprites) into Nyan Cat motion slots.',
-    defaultSprite: 'Default Sprite (Default)'
+    defaultSprite: 'Default Sprite (Default)',
+    paletteTitle: 'Palette Manager',
+    paletteDesc: 'Load custom color palette packages from external JSON files.',
+    btnImportPalette: 'Import Palette JSON',
+    btnCreatePalette: '➕ Create Palette',
+    paletteCreatorTitle: 'Design New Color Palette',
+    btnAddColor: '➕ Add Color',
+    btnSaveAndExport: '💾 Save & Get JSON',
+    tooltipExportPalette: 'Download palette JSON to computer',
+    loadedPalettes: 'Loaded palettes'
   },
   skin: {
     classic: 'Classic Grey',
@@ -84,17 +93,27 @@ const en = {
     canvasTitle: 'Canvas {w} × {h} px',
     errors: {
       missingName: 'Please enter part name!',
-      saveFailed: 'Save failed: {error}'
+      saveFailed: 'Save failed: {error}',
+      invalidPalette: '⚠️ Invalid JSON! Must contain keys 1-8 pointing to hex color codes.',
+      paletteParseError: '❌ Error parsing custom palette JSON!',
+      missingPaletteName: '⚠️ Please enter a palette name!'
     },
     confirm: {
       deletePart: 'Delete part "{name}" from library? This also removes it from layers/animations using it.',
-      clearGrid: 'Clear current drawing grid?'
+      clearGrid: 'Clear current drawing grid?',
+      deletePalette: 'Do you want to unload custom palette "{name}" from the list?'
     },
     toasts: {
       savedAndBound: '💾 Saved "{name}" and auto-bound to motion slot!',
       savedToLibrary: '💾 Saved "{name}" to library!',
       deleted: '🗑️ Deleted "{name}".',
-      copiedCode: '📋 Copied 2D matrix code to clipboard!'
+      copiedCode: '📋 Copied 2D matrix code to clipboard!',
+      paletteLoaded: '🎨 Loaded custom palette "{name}" successfully!',
+      paletteExported: '📤 Exported custom palette successfully!',
+      paletteDeleted: '🗑️ Unloaded custom palette "{name}".',
+      paletteSaved: '🎨 Saved palette "{name}" to library!',
+      colorSelected: '🎨 Selected color brush #{index}',
+      colorAdded: '🎨 Added new color brush #{index}!'
     },
     colors: {
       0: 'Eraser (Transparent)',
@@ -165,8 +184,20 @@ const en = {
     },
     btnSave: 'Save to My Library',
     btnDelete: 'Delete Part',
-    section2Title: '2. Select Paint Brush',
-    section3Title: '3. Live Export Array Code',
+    sectionPaletteTitle: 'Custom Color Palette',
+    defaultPalette: 'Default Nyan Theme (Dynamic)',
+    btnExportPalette: 'Export Palette JSON',
+    btnDeletePalette: 'Unload Palette',
+    btnImportPalette: 'Import Palette (.json)',
+    btnSavePalette: 'Save Palette',
+    savePalettePlaceholder: 'Palette package name...',
+    templateColorsLabel: 'Template Palette Colors (Click to add):',
+    btnApplyPalette: 'Apply All',
+    btnAddBrush: 'Add New Color Brush',
+    sectionBrushTitle: 'Select Paint Brush',
+    brushHint: '💡 Click the color box of any brush to edit with a custom color!',
+    tooltipColorPicker: 'Click to select custom color',
+    sectionExportTitle: 'Live Export Array Code',
     btnCopy: 'Copy'
   },
   exportPanel: {
@@ -201,6 +232,10 @@ const en = {
     downloadZip: 'Download Sprite ZIP',
     card3Title: 'Record Lossless WebM',
     card3Desc: 'Record the Canvas preview at 1920x462, 24 FPS, high-quality 6 Mbps. Works for both Nyan Cat and assembled layer scenes.',
+    paletteTitle: 'Palette Manager',
+    paletteDesc: 'Load custom color palette packages from JSON files to design parts with unified theme colors.',
+    btnImportPalette: 'Import Palette JSON',
+    loadedPalettes: 'Loaded palettes',
     ffmpeg: {
       title: '💡 Looping MP4 Conversion Pipeline for Aida64 / Wallpaper Engine',
       intro: 'Due to hardware acceleration and browser licensing limits on H.264 MP4 exports, the canvas recorder outputs high-fidelity Lossless WebM files. You can convert it to a looping MP4 file using two methods:',
@@ -325,7 +360,9 @@ const en = {
       unload: 'Unload',
       load: 'Load',
       noCustom: 'No custom packages found',
-      confirmDelete: 'Permanently delete package "{name}" and all parts inside?'
+      confirmDelete: 'Permanently delete package "{name}" and all parts inside?',
+      colorsTitle: 'Color Palette Packages',
+      noPalettes: 'No custom palettes loaded'
     },
     search: {
       noResults: 'No matching parts found.',

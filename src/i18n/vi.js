@@ -47,7 +47,16 @@ const vi = {
     rainbowStyle: 'Rainbow Trail Wave Style',
     motionBindings: 'MOTION SLOT BINDINGS',
     motionBindingsDesc: 'Gán các bộ phận vẽ tùy chỉnh (My Custom Sprites) của bạn vào các khớp chuyển động nhấp nhô của Nyan Cat.',
-    defaultSprite: 'Default Sprite (Mặc định)'
+    defaultSprite: 'Default Sprite (Mặc định)',
+    paletteTitle: 'Quản Lý Gói Màu',
+    paletteDesc: 'Nạp các gói bảng màu tùy chỉnh từ tệp JSON bên ngoài.',
+    btnImportPalette: 'Nạp Gói Màu JSON',
+    btnCreatePalette: '➕ Tạo Gói Màu',
+    paletteCreatorTitle: 'Thiết Kế Gói Màu Mới',
+    btnAddColor: '➕ Thêm Màu',
+    btnSaveAndExport: '💾 Lưu & Tải JSON',
+    tooltipExportPalette: 'Tải tệp JSON gói màu về máy',
+    loadedPalettes: 'Các gói màu đã nạp'
   },
   skin: {
     classic: 'Classic Grey',
@@ -84,17 +93,27 @@ const vi = {
     canvasTitle: 'Canvas {w} × {h} px',
     errors: {
       missingName: 'Vui lòng nhập tên cho linh kiện trước khi lưu.',
-      saveFailed: 'Lỗi khi lưu: {error}'
+      saveFailed: 'Lỗi khi lưu: {error}',
+      invalidPalette: '⚠️ File JSON không hợp lệ! Phải chứa các key 1-8 trỏ tới mã màu HEX.',
+      paletteParseError: '❌ Lỗi khi đọc file JSON gói màu!',
+      missingPaletteName: '⚠️ Vui lòng nhập tên gói màu!'
     },
     confirm: {
       deletePart: 'Bạn có chắc muốn xóa linh kiện "{name}" không?',
-      clearGrid: 'Bạn có chắc muốn xóa toàn bộ khung vẽ hiện tại không?'
+      clearGrid: 'Bạn có chắc muốn xóa toàn bộ khung vẽ hiện tại không?',
+      deletePalette: 'Bạn có chắc muốn gỡ gói màu "{name}" khỏi danh sách?'
     },
     toasts: {
       savedAndBound: '💾 Đã lưu "{name}" và gán vào chuyển động thành công!',
       savedToLibrary: '💾 Đã lưu "{name}" vào thư viện của bạn.',
       deleted: '🗑️ Đã xóa linh kiện "{name}".',
-      copiedCode: 'Đã sao chép mã nguồn vào clipboard!'
+      copiedCode: 'Đã sao chép mã nguồn vào clipboard!',
+      paletteLoaded: '🎨 Đã nạp gói màu "{name}" thành công!',
+      paletteExported: '📤 Đã xuất gói màu thành công!',
+      paletteDeleted: '🗑️ Đã gỡ gói màu "{name}".',
+      paletteSaved: '🎨 Đã lưu gói màu "{name}" vào thư viện!',
+      colorSelected: '🎨 Đã chọn cọ màu #{index}',
+      colorAdded: '🎨 Đã thêm màu mới vào cọ vẽ #{index}!'
     },
     colors: {
       0: 'Tẩy (Không màu)',
@@ -165,8 +184,20 @@ const vi = {
     },
     btnSave: 'Save to My Library',
     btnDelete: 'Delete Part',
-    section2Title: '2. Chọn Cọ Vẽ',
-    section3Title: '3. Mã Ma Trận 2D',
+    sectionPaletteTitle: 'Bảng Màu Tùy Biến',
+    defaultPalette: 'Màu Nyan Mặc Định (Chuyển Động)',
+    btnExportPalette: 'Xuất bảng màu JSON',
+    btnDeletePalette: 'Gỡ bảng màu này',
+    btnImportPalette: 'Nạp Gói Màu (.json)',
+    btnSavePalette: 'Lưu Gói',
+    savePalettePlaceholder: 'Tên gói màu mới...',
+    templateColorsLabel: 'Bảng Màu Mẫu (Click để lấy màu):',
+    btnApplyPalette: 'Áp Dụng',
+    btnAddBrush: 'Thêm Cọ Màu Mới',
+    sectionBrushTitle: 'Chọn Cọ Vẽ',
+    brushHint: '💡 Nhấp vào ô màu của cọ vẽ bất kỳ để sửa màu tùy chọn!',
+    tooltipColorPicker: 'Nhấp vào để chọn màu tùy ý',
+    sectionExportTitle: 'Mã Ma Trận 2D',
     btnCopy: 'Copy'
   },
   exportPanel: {
@@ -201,6 +232,10 @@ const vi = {
     downloadZip: 'Tải Gói ZIP',
     card3Title: 'Ghi Hình Canvas (WebM Video)',
     card3Desc: 'Ghi lại màn hình canvas chạy hoạt ảnh trực tiếp thành file video WebM chất lượng cao.',
+    paletteTitle: 'Quản Lý Gói Màu (Palette Manager)',
+    paletteDesc: 'Nạp gói màu sắc tùy chỉnh từ tệp tin JSON để sử dụng rộng rãi khi thiết kế linh kiện.',
+    btnImportPalette: 'Nạp Gói Màu JSON',
+    loadedPalettes: 'Các gói màu đã nạp',
     ffmpeg: {
       title: '💡 Looping MP4 Conversion Pipeline for Aida64 / Wallpaper Engine',
       intro: 'Do giới hạn bản quyền của trình duyệt không cho phép kết xuất trực tiếp tệp tin MP4 H.264 phần cứng, canvas recorder sẽ xuất ra file WebM Lossless siêu nét. Bạn có hai cách để nén thành MP4 vòng lặp hoàn hảo cho màn hình phụ case PC:',
@@ -325,7 +360,9 @@ const vi = {
       unload: 'Unload',
       load: 'Load',
       noCustom: 'Chưa có package tự tạo nào',
-      confirmDelete: 'Xóa vĩnh viễn package "{name}" và tất cả linh kiện bên trong?'
+      confirmDelete: 'Xóa vĩnh viễn package "{name}" và tất cả linh kiện bên trong?',
+      colorsTitle: 'Quản Lý Gói Màu (Palettes)',
+      noPalettes: 'Chưa có gói màu tùy biến nào'
     },
     search: {
       noResults: 'Không tìm thấy linh kiện phù hợp.',
