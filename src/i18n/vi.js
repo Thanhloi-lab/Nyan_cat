@@ -184,6 +184,7 @@ const vi = {
     },
     btnSave: 'Save to My Library',
     btnDelete: 'Delete Part',
+    isAnimationFrameOnlyLabel: 'Linh kiện phụ cho hoạt ảnh (Ẩn khỏi bảng lắp ráp chính)',
     sectionPaletteTitle: 'Bảng Màu Tùy Biến',
     defaultPalette: 'Màu Nyan Mặc Định (Chuyển Động)',
     btnExportPalette: 'Xuất bảng màu JSON',

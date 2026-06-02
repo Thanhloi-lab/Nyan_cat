@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Sliders, Paintbrush, Link2, Upload, Trash2 } from 'lucide-react';
+import ColorPicker from './ColorPicker';
 
 const DYNAMIC_SLOT_IDS = [
   'HEAD_OPEN',
@@ -295,124 +296,6 @@ export default function ControlSidebar() {
         )}
       </div>
 
-      {/* Block 2: Sprite Customize & Color Picking */}
-      <div className="sidebar-card glass-card">
-        <div className="sidebar-header">
-          <Paintbrush size={16} className="text-yellow" />
-          <h3>{t('sidebar.customizeSprite')}</h3>
-        </div>
-
-        {/* Skin Selector */}
-        <div className="control-group">
-          <label className="control-label">{t('sidebar.skinStyle')}</label>
-          <select
-            className="select-custom"
-            value={settings.skinStyle}
-            onChange={(e) => updateSetting('skinStyle', e.target.value)}
-          >
-            <option value="classic">{t('skin.classic')}</option>
-            <option value="tabby">{t('skin.tabby')}</option>
-            <option value="siamese">{t('skin.siamese')}</option>
-            <option value="void">{t('skin.void')}</option>
-            <option value="albino">{t('skin.albino')}</option>
-          </select>
-        </div>
-
-        {/* Poptart selector */}
-        <div className="control-group">
-          <label className="control-label">{t('sidebar.poptartStyle')}</label>
-          <select
-            className="select-custom"
-            value={settings.poptartStyle}
-            onChange={(e) => updateSetting('poptartStyle', e.target.value)}
-          >
-            <option value="strawberry">{t('poptart.strawberry')}</option>
-            <option value="blueberry">{t('poptart.blueberry')}</option>
-            <option value="chocolate">{t('poptart.chocolate')}</option>
-            <option value="custom">{t('poptart.custom')}</option>
-          </select>
-        </div>
-
-        {/* Custom Poptart color picker */}
-        {settings.poptartStyle === 'custom' && (
-          <div className="custom-colors-picker-box font-sans">
-            <div className="picker-row">
-              <div className="picker-col">
-                <label>{t('sidebar.frosting')}</label>
-                <input
-                  type="color"
-                  value={settings.customFrostingColor}
-                  onChange={(e) => updateSetting('customFrostingColor', e.target.value)}
-                />
-              </div>
-              <div className="picker-col">
-                <label>{t('sidebar.crust')}</label>
-                <input
-                  type="color"
-                  value={settings.customCrustColor}
-                  onChange={(e) => updateSetting('customCrustColor', e.target.value)}
-                />
-              </div>
-              <div className="picker-col">
-                <label>{t('sidebar.sprinkles')}</label>
-                <input
-                  type="color"
-                  value={settings.customSprinkleColor}
-                  onChange={(e) => updateSetting('customSprinkleColor', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Head position offsets (visible only in dynamic animations) */}
-        {settings.movementMode !== 'assembler' && (
-          <div className="head-offsets-box font-sans">
-            <h4 className="sub-title">{t('sidebar.headFineTune')}</h4>
-            <div className="slider-row">
-              <label>{t('sidebar.headDx')}</label>
-              <span className="text-cyan">{settings.headDx} px</span>
-            </div>
-            <input
-              type="range"
-              min="8"
-              max="25"
-              value={settings.headDx}
-              onChange={(e) => updateSetting('headDx', parseInt(e.target.value))}
-              className="custom-slider"
-            />
-            <div className="slider-row" style={{ marginTop: 8 }}>
-              <label>{t('sidebar.headDy')}</label>
-              <span className="text-cyan">{settings.headDy} px</span>
-            </div>
-            <input
-              type="range"
-              min="-8"
-              max="8"
-              value={settings.headDy}
-              onChange={(e) => updateSetting('headDy', parseInt(e.target.value))}
-              className="custom-slider"
-            />
-          </div>
-        )}
-
-        {/* Rainbow Style selector */}
-        {settings.movementMode !== 'assembler' && (
-          <div className="control-group" style={{ marginTop: 12 }}>
-            <label className="control-label">{t('sidebar.rainbowStyle')}</label>
-            <select
-              className="select-custom"
-              value={settings.rainbowStyle}
-              onChange={(e) => updateSetting('rainbowStyle', e.target.value)}
-            >
-              <option value="classic">{t('rainbow.classic')}</option>
-              <option value="neon">{t('rainbow.neon')}</option>
-              <option value="pastel">{t('rainbow.pastel')}</option>
-              <option value="monochrome">{t('rainbow.monochrome')}</option>
-            </select>
-          </div>
-        )}
-      </div>
 
       {/* Block 2.5: Custom Palette Package Manager */}
       <div className="sidebar-card glass-card">
@@ -471,7 +354,7 @@ export default function ControlSidebar() {
 
                 {/* Color bubbles list */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', padding: '8px' }}>
-                  {Object.keys(newPaletteColors).map((k) => {
+                  {Object.keys(newPaletteColors).map((k, bubbleIdx) => {
                     const idx = parseInt(k);
                     const hex = newPaletteColors[k];
                     return (
@@ -481,26 +364,18 @@ export default function ControlSidebar() {
                           position: 'relative',
                           width: '24px',
                           height: '24px',
-                          borderRadius: '4px',
-                          backgroundColor: hex,
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          cursor: 'pointer'
                         }}
-                        title={`Màu #${idx}: ${hex}`}
                       >
-                        <input
-                          type="color"
-                          value={hex}
-                          onChange={(e) => handleNewPaletteColorChange(idx, e.target.value)}
+                        <ColorPicker
+                          color={hex}
+                          onChange={(newHex) => handleNewPaletteColorChange(idx, newHex)}
                           style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            opacity: 0,
-                            cursor: 'pointer'
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '4px',
                           }}
+                          title={`Màu #${idx}: ${hex}`}
+                          align={bubbleIdx % 8 < 4 ? 'left' : 'right'}
                         />
                         {/* Remove bubble button */}
                         <button

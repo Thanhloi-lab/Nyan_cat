@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect, useRef } from 'react';
-import { DEFAULT_SPRITES } from '../utils/nyanRenderer';
+import { DEFAULT_SPRITES, getSpriteMatrix } from '../utils/nyanRenderer';
 import { detectInitialLang, tFor } from '../i18n';
 
 
@@ -83,10 +83,19 @@ export const AppProvider = ({ children }) => {
     const raw = initialData.customParts || {};
     const upgraded = {};
     Object.keys(raw).forEach((k) => {
+      const part = raw[k];
+      // Migrate legacy format: data → matrix, palette → colors
+      const matrix = part.matrix || part.data;
+      const colors = part.colors || part.palette || null;
       upgraded[k] = {
-        ...raw[k],
-        package: raw[k].package || 'My Custom'
+        ...part,
+        matrix,
+        colors,
+        package: part.package || 'My Custom'
       };
+      // Remove legacy fields to keep data clean
+      delete upgraded[k].data;
+      delete upgraded[k].palette;
     });
     return upgraded;
   });
@@ -208,10 +217,17 @@ export const AppProvider = ({ children }) => {
             if (data.customParts) {
               const upgraded = {};
               Object.keys(data.customParts).forEach((k) => {
+                const part = data.customParts[k];
+                const matrix = part.matrix || part.data;
+                const colors = part.colors || part.palette || null;
                 upgraded[k] = {
-                  ...data.customParts[k],
-                  package: data.customParts[k].package || 'My Custom'
+                  ...part,
+                  matrix,
+                  colors,
+                  package: part.package || 'My Custom'
                 };
+                delete upgraded[k].data;
+                delete upgraded[k].palette;
               });
               setCustomParts(upgraded);
             }
@@ -263,19 +279,20 @@ export const AppProvider = ({ children }) => {
 
   const t = (key, vars) => tFor(settings.language, key, vars);
 
-  const saveCustomPart = (name, width, height, data, packageName = 'My Custom', palette = null, colorLabels = null) => {
+  const saveCustomPart = (name, width, height, matrix, packageName = 'My Custom', colors = null, colorLabels = null, isAnimationFrameOnly = false) => {
     const key = name.trim().replace(/\s+/g, '_').toLowerCase();
     const pkg = packageName.trim() || 'My Custom';
     setCustomParts((prev) => ({
       ...prev,
-      [key]: { 
-        name: name.trim(), 
-        width, 
-        height, 
-        data, 
-        package: pkg, 
-        ...(palette ? { palette } : {}),
-        ...(colorLabels ? { colorLabels } : {}) 
+      [key]: {
+        name: name.trim(),
+        width,
+        height,
+        matrix,
+        package: pkg,
+        isAnimationFrameOnly,
+        ...(colors ? { colors } : {}),
+        ...(colorLabels ? { colorLabels } : {})
       }
     }));
     // Auto-load the package
@@ -387,9 +404,10 @@ export const AppProvider = ({ children }) => {
   const getDefaultSpriteData = (spriteKey) => {
     const raw = DEFAULT_SPRITES[spriteKey];
     if (!raw) return { width: 11, height: 11, data: Array(11).fill().map(() => Array(11).fill(0)) };
-    const height = raw.length;
-    const width = raw[0].length;
-    return { width, height, data: JSON.parse(JSON.stringify(raw)) };
+    const matrix = getSpriteMatrix(raw);
+    const height = matrix.length;
+    const width = matrix[0].length;
+    return { width, height, data: JSON.parse(JSON.stringify(matrix)) };
   };
 
   // Add a layer to the Assembler
@@ -397,7 +415,7 @@ export const AppProvider = ({ children }) => {
     const newId = 'layer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     // Find highest z-index
     const maxZ = layers.length > 0 ? Math.max(...layers.map(l => l.zIndex)) : 0;
-    
+
     setLayers((prev) => [
       ...prev,
       {
@@ -473,7 +491,7 @@ export const AppProvider = ({ children }) => {
       background: { type: 'transparent', value: '' },
       layers: [] // Starts completely empty!
     };
-    
+
     setProfiles((prev) => {
       const next = { ...prev, [id]: newProfile };
       localStorage.setItem('nyan_studio_assembler_profiles', JSON.stringify(next));
@@ -543,16 +561,23 @@ export const AppProvider = ({ children }) => {
       const importedProfile = payload.profile;
       const importedCustomParts = payload.customParts || {};
 
-      // 1. Merge custom parts
+      // 1. Merge custom parts (migrate legacy format)
       let mergedPartsCount = 0;
       setCustomParts((prev) => {
         const next = { ...prev };
         Object.keys(importedCustomParts).forEach((k) => {
           if (!next[k]) {
+            const part = importedCustomParts[k];
+            const matrix = part.matrix || part.data;
+            const colors = part.colors || part.palette || null;
             next[k] = {
-              ...importedCustomParts[k],
-              package: importedCustomParts[k].package || 'My Custom'
+              ...part,
+              matrix,
+              colors,
+              package: part.package || 'My Custom'
             };
+            delete next[k].data;
+            delete next[k].palette;
             mergedPartsCount++;
           }
         });
@@ -593,15 +618,15 @@ export const AppProvider = ({ children }) => {
   const checkHasUnsavedChanges = () => {
     if (!activeProfileId || !profiles[activeProfileId]) return false;
     const saved = profiles[activeProfileId];
-    
+
     const layersChanged = JSON.stringify(saved.layers) !== JSON.stringify(layers);
     const backgroundChanged = JSON.stringify(saved.background) !== JSON.stringify(background);
     const resolutionChanged = JSON.stringify(saved.resolution) !== JSON.stringify(resolution);
-    
+
     return layersChanged || backgroundChanged || resolutionChanged;
   };
 
-// Bind a custom part to Nyan dynamic slot
+  // Bind a custom part to Nyan dynamic slot
   const bindPartToSlot = (slot, partName) => {
     setBindings((prev) => ({ ...prev, [slot]: partName }));
   };
@@ -613,7 +638,23 @@ export const AppProvider = ({ children }) => {
         .then((res) => res.json())
         .then((data) => {
           if (data) {
-            if (data.customParts) setCustomParts(data.customParts);
+            if (data.customParts) {
+              const upgraded = {};
+              Object.keys(data.customParts).forEach((k) => {
+                const part = data.customParts[k];
+                const matrix = part.matrix || part.data;
+                const colors = part.colors || part.palette || null;
+                upgraded[k] = {
+                  ...part,
+                  matrix,
+                  colors,
+                  package: part.package || 'My Custom'
+                };
+                delete upgraded[k].data;
+                delete upgraded[k].palette;
+              });
+              setCustomParts(upgraded);
+            }
             if (data.layers) setLayers(data.layers);
             if (data.background) setBackground(data.background);
             if (data.bindings) setBindings(data.bindings);
@@ -667,10 +708,17 @@ export const AppProvider = ({ children }) => {
       if (parsed.customParts) {
         const upgraded = {};
         Object.keys(parsed.customParts).forEach((k) => {
+          const part = parsed.customParts[k];
+          const matrix = part.matrix || part.data;
+          const colors = part.colors || part.palette || null;
           upgraded[k] = {
-            ...parsed.customParts[k],
-            package: parsed.customParts[k].package || 'My Custom'
+            ...part,
+            matrix,
+            colors,
+            package: part.package || 'My Custom'
           };
+          delete upgraded[k].data;
+          delete upgraded[k].palette;
         });
         setCustomParts(upgraded);
       }
@@ -689,72 +737,72 @@ export const AppProvider = ({ children }) => {
   const getActiveRenderPartsMapping = () => {
     const mapping = {};
     const live = liveEditingPartRef.current;
-    
+
     // Helper to find matching custom part in library
     const findLibraryMatch = (slot) => {
       const slotLower = slot.toLowerCase();
       const keys = Object.keys(customParts);
-      
+
       if (slotLower.startsWith('head')) {
         const blinkKey = keys.find(k => k.includes('head') && k.includes('blink'));
         const openKey = keys.find(k => k.includes('head') && k.includes('open'));
         const genericKey = keys.find(k => k.includes('head'));
-        
+
         if (slotLower === 'head_blink') {
           return blinkKey || openKey || genericKey;
         } else {
           return openKey || blinkKey || genericKey;
         }
       }
-      
+
       if (slotLower.startsWith('poptart')) {
         return keys.find(k => k.includes('poptart') || k.includes('cookie') || k.includes('body'));
       }
-      
+
       if (slotLower.startsWith('tail')) {
         const upKey = keys.find(k => k.includes('tail') && k.includes('up'));
         const midKey = keys.find(k => k.includes('tail') && k.includes('mid'));
         const downKey = keys.find(k => k.includes('tail') && k.includes('down'));
         const genericKey = keys.find(k => k.includes('tail'));
-        
+
         if (slotLower === 'tail_up') return upKey || midKey || downKey || genericKey;
         if (slotLower === 'tail_mid') return midKey || upKey || downKey || genericKey;
         if (slotLower === 'tail_down') return downKey || midKey || upKey || genericKey;
       }
-      
+
       if (slotLower.startsWith('leg')) {
         const downKey = keys.find(k => k.includes('leg') && k.includes('down'));
         const frontKey = keys.find(k => k.includes('leg') && k.includes('front'));
         const backKey = keys.find(k => k.includes('leg') && k.includes('back'));
         const genericKey = keys.find(k => k.includes('leg'));
-        
+
         if (slotLower === 'leg_down') return downKey || frontKey || backKey || genericKey;
         if (slotLower === 'leg_front') return frontKey || downKey || backKey || genericKey;
         if (slotLower === 'leg_back') return backKey || downKey || frontKey || genericKey;
       }
-      
+
       return null;
     };
 
     Object.keys(bindings).forEach((slot) => {
       const partKey = bindings[slot];
-      
+
       // 1. Prioritize explicit custom bindings
       if (partKey && partKey !== 'default') {
         if (live && live.key === partKey && live.data) {
           mapping[slot] = live.data;
         } else if (customParts[partKey]) {
-          mapping[slot] = customParts[partKey].data;
+          // Use .matrix (new format) with fallback to .data (legacy)
+          mapping[slot] = customParts[partKey].matrix || customParts[partKey].data;
         } else {
-          mapping[slot] = DEFAULT_SPRITES[slot];
+          mapping[slot] = getSpriteMatrix(DEFAULT_SPRITES[slot]);
         }
-      } 
-      // 2. Intelligent real-time paint projection:
-      // If slot is default, but the user is actively drawing a matching part in the editor, project it!
+      }
+      // 2. Intelligent real-time paint projection
       else if (live && live.key && live.data) {
         const keyLower = live.key.toLowerCase();
         const slotLower = slot.toLowerCase();
-        
+
         let matches = false;
         if (slotLower.startsWith('head') && keyLower.includes('head')) {
           if (slotLower === 'head_blink') {
@@ -787,26 +835,26 @@ export const AppProvider = ({ children }) => {
             matches = true;
           }
         }
-        
+
         if (matches) {
           mapping[slot] = live.data;
         } else {
           // If we are drawing something else, check if library has a matching custom part for this slot
           const libMatchKey = findLibraryMatch(slot);
           if (libMatchKey && customParts[libMatchKey]) {
-            mapping[slot] = customParts[libMatchKey].data;
+            mapping[slot] = customParts[libMatchKey].matrix || customParts[libMatchKey].data;
           } else {
-            mapping[slot] = DEFAULT_SPRITES[slot];
+            mapping[slot] = getSpriteMatrix(DEFAULT_SPRITES[slot]);
           }
         }
-      } 
-      // 3. Smart library auto-match fallback (slot is default, not currently drawing matching part)
+      }
+      // 3. Smart library auto-match fallback
       else {
         const libMatchKey = findLibraryMatch(slot);
         if (libMatchKey && customParts[libMatchKey]) {
-          mapping[slot] = customParts[libMatchKey].data;
+          mapping[slot] = customParts[libMatchKey].matrix || customParts[libMatchKey].data;
         } else {
-          mapping[slot] = DEFAULT_SPRITES[slot];
+          mapping[slot] = getSpriteMatrix(DEFAULT_SPRITES[slot]);
         }
       }
     });

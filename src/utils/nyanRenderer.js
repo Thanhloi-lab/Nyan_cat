@@ -73,87 +73,158 @@ export const PALETTES = {
 
 // ===================================================================
 // 2. PIXEL-ACCURATE DEFAULT SPRITE DATA
+// Each sprite is an object: { colors: { "1": hex, ... }, matrix: [[...], ...] }
+// colors defines the color map for each index used in the matrix.
+// Index 0 is always transparent and does not need to be listed.
 // ===================================================================
 
-export const DEFAULT_SPRITES = {
-  // Pop-Tart Body (23 wide × 18 tall, rendered as POPTART_W x POPTART_H i.e. 21x12 inner window of pixel values)
-  POPTART: [
-    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-    [0,1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,0],
-    [1,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,4,1],
-    [1,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,1],
-    [1,4,5,5,6,5,5,5,6,5,5,5,5,6,5,5,5,5,5,5,5,4,1],
-    [1,4,5,5,5,5,5,5,5,5,5,6,5,5,5,5,6,5,5,5,5,4,1],
-    [1,4,5,6,5,5,6,5,5,5,5,5,5,5,6,5,5,5,5,5,5,4,1],
-    [1,4,5,5,5,5,5,5,5,6,5,5,5,5,5,5,5,6,5,5,5,4,1],
-    [1,4,5,5,5,6,5,5,5,5,5,5,6,5,5,6,5,5,5,5,5,4,1],
-    [1,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,5,5,4,1],
-    [1,4,5,5,5,6,5,5,5,6,5,5,5,5,5,5,5,5,5,5,5,4,1],
-    [1,4,5,5,5,5,5,5,5,5,5,5,5,6,5,5,5,5,5,5,5,4,1],
-    [1,4,5,5,5,5,5,5,6,5,5,5,5,5,5,5,5,5,5,5,5,4,1],
-    [1,4,5,5,5,6,5,5,5,5,5,5,5,5,5,5,6,5,5,5,5,4,1],
-    [1,4,4,5,5,5,5,5,6,5,5,5,6,5,5,5,5,5,6,5,4,4,1],
-    [1,4,4,4,5,5,5,5,5,5,5,5,5,5,6,5,5,5,5,4,4,4,1],
-    [0,1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,1],
-    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0]
-  ],
-  HEAD_OPEN: [
-    [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
-    [0,1,2,2,1,0,0,0,0,0,0,1,2,2,1,0],
-    [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],
-    [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-    [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-    [1,2,2,2,7,1,2,2,2,2,2,7,1,2,2,1],
-    [1,2,2,2,1,1,2,2,2,1,2,1,1,2,2,1],
-    [1,2,8,8,2,2,2,2,2,2,2,2,2,8,8,1],
-    [1,2,8,8,2,1,2,2,1,2,2,1,2,8,8,1],
-    [0,1,2,2,2,1,1,1,1,1,1,1,2,2,1,0],
-    [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],
-    [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0]
-  ],
-  HEAD_BLINK: [
-    [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
-    [0,1,2,2,1,0,0,0,0,0,0,1,2,2,1,0],
-    [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],
-    [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-    [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-    [1,2,2,2,7,1,2,2,2,2,2,7,1,2,2,1],
-    [1,2,2,2,1,1,2,2,2,1,2,1,1,2,2,1],
-    [1,2,8,8,2,2,2,2,2,2,2,2,2,8,8,1],
-    [1,2,8,8,2,1,2,2,1,2,2,1,2,8,8,1],
-    [0,1,2,2,2,1,1,1,1,1,1,1,2,2,1,0],
-    [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],
-    [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0]
-  ],
-  LEG_DOWN: [[1,1,1],[1,2,1],[1,2,1]],
-  LEG_FRONT: [[1,1,1],[1,2,1],[0,1,1]],
-  LEG_BACK: [[1,1,1],[1,2,1],[1,1,0]],
-  TAIL_UP: [
-    [1,1,1,1,0,0],
-    [1,2,2,1,1,0],
-    [1,1,2,2,1,1],
-    [0,1,1,2,2,1],
-    [0,0,1,1,2,2],
-    [0,0,0,1,1,1],
-    [0,0,0,0,0,1]
-  ],
-  TAIL_MID: [
-    [1,1,1,1,1,0,0],
-    [1,2,2,2,1,1,1],
-    [1,1,1,2,2,2,1],
-    [0,0,1,1,1,1,2],
-    [0,0,0,0,0,1,1]
-  ],
-  TAIL_DOWN: [
-    [0,0,0,0,0,1],
-    [0,1,1,1,1,1],
-    [1,1,2,2,2,2],
-    [1,2,2,2,1,1],
-    [0,1,1,1,1,0]
-  ]
+// Default fallback colors shared by all default sprites (classic Nyan Cat palette)
+const DEFAULT_COLORS = {
+  "1": "#000000",
+  "2": "#999999",
+  "3": "#666666",
+  "4": "#FFCC99",
+  "5": "#FF99CC",
+  "6": "#FF3399",
+  "7": "#ffffff",
+  "8": "#ff9999"
 };
+
+export const DEFAULT_SPRITES = {
+  // Pop-Tart Body (23 wide × 18 tall)
+  POPTART: {
+    colors: {
+      "1": "#000000",
+      "4": "#FFCC99",
+      "5": "#FF99CC",
+      "6": "#FF3399"
+    },
+    matrix: [
+      [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+      [0,1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,0],
+      [1,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,4,1],
+      [1,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,1],
+      [1,4,5,5,6,5,5,5,6,5,5,5,5,6,5,5,5,5,5,5,5,4,1],
+      [1,4,5,5,5,5,5,5,5,5,5,6,5,5,5,5,6,5,5,5,5,4,1],
+      [1,4,5,6,5,5,6,5,5,5,5,5,5,5,6,5,5,5,5,5,5,4,1],
+      [1,4,5,5,5,5,5,5,5,6,5,5,5,5,5,5,5,6,5,5,5,4,1],
+      [1,4,5,5,5,6,5,5,5,5,5,5,6,5,5,6,5,5,5,5,5,4,1],
+      [1,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,5,5,4,1],
+      [1,4,5,5,5,6,5,5,5,6,5,5,5,5,5,5,5,5,5,5,5,4,1],
+      [1,4,5,5,5,5,5,5,5,5,5,5,5,6,5,5,5,5,5,5,5,4,1],
+      [1,4,5,5,5,5,5,5,6,5,5,5,5,5,5,5,5,5,5,5,5,4,1],
+      [1,4,5,5,5,6,5,5,5,5,5,5,5,5,5,5,6,5,5,5,5,4,1],
+      [1,4,4,5,5,5,5,5,6,5,5,5,6,5,5,5,5,5,6,5,4,4,1],
+      [1,4,4,4,5,5,5,5,5,5,5,5,5,5,6,5,5,5,5,4,4,4,1],
+      [0,1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,1],
+      [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0]
+    ]
+  },
+  HEAD_OPEN: {
+    colors: {
+      "1": "#000000",
+      "2": "#999999",
+      "7": "#ffffff",
+      "8": "#ff9999"
+    },
+    matrix: [
+      [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
+      [0,1,2,2,1,0,0,0,0,0,0,1,2,2,1,0],
+      [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],
+      [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
+      [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
+      [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+      [1,2,2,2,7,1,2,2,2,2,2,7,1,2,2,1],
+      [1,2,2,2,1,1,2,2,2,1,2,1,1,2,2,1],
+      [1,2,8,8,2,2,2,2,2,2,2,2,2,8,8,1],
+      [1,2,8,8,2,1,2,2,1,2,2,1,2,8,8,1],
+      [0,1,2,2,2,1,1,1,1,1,1,1,2,2,1,0],
+      [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],
+      [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0]
+    ]
+  },
+  HEAD_BLINK: {
+    colors: {
+      "1": "#000000",
+      "2": "#999999",
+      "7": "#ffffff",
+      "8": "#ff9999"
+    },
+    matrix: [
+      [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
+      [0,1,2,2,1,0,0,0,0,0,0,1,2,2,1,0],
+      [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],
+      [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
+      [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
+      [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+      [1,2,2,2,7,1,2,2,2,2,2,7,1,2,2,1],
+      [1,2,2,2,1,1,2,2,2,1,2,1,1,2,2,1],
+      [1,2,8,8,2,2,2,2,2,2,2,2,2,8,8,1],
+      [1,2,8,8,2,1,2,2,1,2,2,1,2,8,8,1],
+      [0,1,2,2,2,1,1,1,1,1,1,1,2,2,1,0],
+      [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],
+      [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0]
+    ]
+  },
+  LEG_DOWN: {
+    colors: { "1": "#000000", "2": "#999999" },
+    matrix: [[1,1,1],[1,2,1],[1,2,1]]
+  },
+  LEG_FRONT: {
+    colors: { "1": "#000000", "2": "#999999" },
+    matrix: [[1,1,1],[1,2,1],[0,1,1]]
+  },
+  LEG_BACK: {
+    colors: { "1": "#000000", "2": "#999999" },
+    matrix: [[1,1,1],[1,2,1],[1,1,0]]
+  },
+  TAIL_UP: {
+    colors: { "1": "#000000", "2": "#999999" },
+    matrix: [
+      [1,1,1,1,0,0],
+      [1,2,2,1,1,0],
+      [1,1,2,2,1,1],
+      [0,1,1,2,2,1],
+      [0,0,1,1,2,2],
+      [0,0,0,1,1,1],
+      [0,0,0,0,0,1]
+    ]
+  },
+  TAIL_MID: {
+    colors: { "1": "#000000", "2": "#999999" },
+    matrix: [
+      [1,1,1,1,1,0,0],
+      [1,2,2,2,1,1,1],
+      [1,1,1,2,2,2,1],
+      [0,0,1,1,1,1,2],
+      [0,0,0,0,0,1,1]
+    ]
+  },
+  TAIL_DOWN: {
+    colors: { "1": "#000000", "2": "#999999" },
+    matrix: [
+      [0,0,0,0,0,1],
+      [0,1,1,1,1,1],
+      [1,1,2,2,2,2],
+      [1,2,2,2,1,1],
+      [0,1,1,1,1,0]
+    ]
+  }
+};
+
+// Helper: get matrix array from a sprite (supports both new object format and legacy 2D array)
+export function getSpriteMatrix(sprite) {
+  if (!sprite) return null;
+  if (Array.isArray(sprite)) return sprite; // legacy fallback
+  return sprite.matrix || null;
+}
+
+// Helper: get color map from a sprite object, merged with DEFAULT_COLORS as base fallback
+export function getSpriteColors(sprite) {
+  if (!sprite) return { ...DEFAULT_COLORS };
+  if (Array.isArray(sprite)) return { ...DEFAULT_COLORS }; // legacy fallback
+  return { ...DEFAULT_COLORS, ...(sprite.colors || {}) };
+}
 
 // Positioning configs for drawing
 export const LEG_DX = [3, 7, 13, 17];
@@ -210,7 +281,7 @@ export class NyanCatModel {
     this.width = SPRITE_W * this.scale;
     this.height = SPRITE_H * this.scale;
     
-    // Custom parts mapping object (holds 2D array mappings)
+    // Custom parts mapping object (holds matrix arrays for rendering)
     this.customPartsMapping = options.customPartsMapping || {};
     this.customParts = options.customParts || {};
     this.bindings = options.bindings || {};
@@ -219,19 +290,50 @@ export class NyanCatModel {
     this.headDy = options.headDy !== undefined ? options.headDy : 0;
   }
 
-  getColorMap() {
+  // Get color map for a slot: colors embedded in the custom/default sprite take priority.
+  // liveEditingPalette overrides when actively editing in PixelEditor.
+  getColorsForSlot(slotKey, fallbackSprite) {
+    // 1. Live editing palette override
+    if (this.liveEditingPalette && this.liveEditingPalette.palette) {
+      const bindingKey = this.bindings ? this.bindings[slotKey] : null;
+      if (bindingKey === this.liveEditingPalette.key || slotKey === this.liveEditingPalette.key) {
+        const skin = PALETTES.skins[this.skinStyle] || PALETTES.skins.classic;
+        const pop = PALETTES.poptarts[this.poptartStyle] || PALETTES.poptarts.strawberry;
+        const baseColorMap = {
+          1: '#000000',
+          2: this.customSkinColor || skin.fill,
+          3: this.customSkinShadow || skin.shadow,
+          4: this.customCrustColor || pop.crust,
+          5: this.customFrostingColor || pop.frosting,
+          6: this.customSprinkleColor || pop.sprinkle,
+          7: '#ffffff',
+          8: '#ff9999'
+        };
+        const spriteColors = getSpriteColors(fallbackSprite);
+        const mergedColors = { ...baseColorMap, ...spriteColors };
+        return { ...mergedColors, ...this.liveEditingPalette.palette };
+      }
+    }
+    // 2. Custom part colors
+    const partKey = this.bindings ? this.bindings[slotKey] : null;
+    if (partKey && partKey !== 'default' && this.customParts && this.customParts[partKey]) {
+      const customPart = this.customParts[partKey];
+      return getSpriteColors(customPart);
+    }
+    // 3. Embedded colors in the sprite object itself, respect settings overrides
     const skin = PALETTES.skins[this.skinStyle] || PALETTES.skins.classic;
-    const pop  = PALETTES.poptarts[this.poptartStyle] || PALETTES.poptarts.strawberry;
-    return {
-      1: '#000000',                                      // outline
-      2: this.customSkinColor    || skin.fill,           // skin
-      3: this.customSkinShadow   || skin.shadow,         // dark skin
-      4: this.customCrustColor   || pop.crust,           // crust
-      5: this.customFrostingColor || pop.frosting,        // frosting
-      6: this.customSprinkleColor || pop.sprinkle,        // sprinkle
-      7: '#ffffff',                                       // eye white
-      8: '#ff9999'                                        // cheek pink
+    const pop = PALETTES.poptarts[this.poptartStyle] || PALETTES.poptarts.strawberry;
+    const baseColorMap = {
+      1: '#000000',
+      2: this.customSkinColor || skin.fill,
+      3: this.customSkinShadow || skin.shadow,
+      4: this.customCrustColor || pop.crust,
+      5: this.customFrostingColor || pop.frosting,
+      6: this.customSprinkleColor || pop.sprinkle,
+      7: '#ffffff',
+      8: '#ff9999'
     };
+    return baseColorMap;
   }
 
   update() {
@@ -252,26 +354,26 @@ export class NyanCatModel {
     }
   }
 
-  getVisibleHeight(grid) {
-    if (!grid || !grid.length) return 0;
-    for (let r = grid.length - 1; r >= 0; r--) {
-      if (grid[r] && grid[r].some(val => val !== 0)) {
+  getVisibleHeight(matrix) {
+    if (!matrix || !matrix.length) return 0;
+    for (let r = matrix.length - 1; r >= 0; r--) {
+      if (matrix[r] && matrix[r].some(val => val !== 0)) {
         return r + 1;
       }
     }
-    return grid.length;
+    return matrix.length;
   }
 
-  drawGrid(ctx, grid, ox, oy, colorMap) {
-    if (!grid) return;
+  drawGrid(ctx, matrix, ox, oy, colorMap) {
+    if (!matrix) return;
     const s = this.scale;
-    for (let r = 0; r < grid.length; r++) {
-      const row = grid[r];
+    for (let r = 0; r < matrix.length; r++) {
+      const row = matrix[r];
       if (!row) continue;
       for (let c = 0; c < row.length; c++) {
         const idx = row[c];
         if (idx === 0) continue;
-        const hex = colorMap[idx];
+        const hex = colorMap[idx] || colorMap[String(idx)];
         if (!hex) continue;
         ctx.fillStyle = hex;
         ctx.fillRect(ox + c * s, oy + r * s, s + 0.5, s + 0.5);
@@ -280,7 +382,6 @@ export class NyanCatModel {
   }
 
   draw(ctx) {
-    const colors = this.getColorMap();
     const s = this.scale;
     const frame = this.currentFrame;
     const bob = this.currentBob;
@@ -288,58 +389,42 @@ export class NyanCatModel {
     const px = this.x;
     const py = this.y + bob;
 
-    // Helper to get color map for a specific slot/part
-    const getColorsForSlot = (slotKey) => {
-      // Prioritize live editing palette if it matches the slot we are rendering
-      if (this.liveEditingPalette && this.liveEditingPalette.palette) {
-        // Find if this live editing part key matches our slot key via bindings
-        const bindingKey = this.bindings ? this.bindings[slotKey] : null;
-        if (bindingKey === this.liveEditingPalette.key) {
-          return { ...colors, ...this.liveEditingPalette.palette };
-        }
-      }
-      
-      const partKey = this.bindings ? this.bindings[slotKey] : null;
-      if (partKey && partKey !== 'default' && this.customParts && this.customParts[partKey]) {
-        const customPart = this.customParts[partKey];
-        if (customPart.palette) {
-          return { ...colors, ...customPart.palette };
-        }
-      }
-      return colors;
-    };
-
     // --- 1. Draw Tail ---
     const ta = TAIL_ANIM[frame];
-    const tailGrid = this.customPartsMapping[ta.shape] || DEFAULT_SPRITES[ta.shape];
-    const tailColors = getColorsForSlot(ta.shape);
-    this.drawGrid(ctx, tailGrid, px + ta.dx * s, py + ta.dy * s, tailColors);
+    const tailSprite = DEFAULT_SPRITES[ta.shape];
+    const tailMatrix = this.customPartsMapping[ta.shape] || getSpriteMatrix(tailSprite);
+    const tailColors = this.getColorsForSlot(ta.shape, tailSprite);
+    this.drawGrid(ctx, tailMatrix, px + ta.dx * s, py + ta.dy * s, tailColors);
 
     // --- 2. Draw Legs ---
     const legAnim = LEG_ANIM[frame];
     const legKeys = ['LEG_DOWN', 'LEG_FRONT', 'LEG_BACK'];
     const legXOffsets = [-1, 1, -1, 1];
+    const poptartRows = getSpriteMatrix(DEFAULT_SPRITES.POPTART).length;
     for (let i = 0; i < 4; i++) {
       const key = legKeys[legAnim[i]];
-      const legGrid = this.customPartsMapping[key] || DEFAULT_SPRITES[key];
-      const legColors = getColorsForSlot(key);
-      this.drawGrid(ctx, legGrid, px + (LEG_DX[i] + legXOffsets[frame]) * s, py + DEFAULT_SPRITES.POPTART.length * s, legColors);
+      const legSprite = DEFAULT_SPRITES[key];
+      const legMatrix = this.customPartsMapping[key] || getSpriteMatrix(legSprite);
+      const legColors = this.getColorsForSlot(key, legSprite);
+      this.drawGrid(ctx, legMatrix, px + (LEG_DX[i] + legXOffsets[frame]) * s, py + poptartRows * s, legColors);
     }
 
     // --- 3. Draw Pop-Tart Body ---
-    const popGrid = this.customPartsMapping.POPTART || DEFAULT_SPRITES.POPTART;
-    const popColors = getColorsForSlot('POPTART');
-    this.drawGrid(ctx, popGrid, px, py, popColors);
+    const popSprite = DEFAULT_SPRITES.POPTART;
+    const popMatrix = this.customPartsMapping.POPTART || getSpriteMatrix(popSprite);
+    const popColors = this.getColorsForSlot('POPTART', popSprite);
+    this.drawGrid(ctx, popMatrix, px, py, popColors);
 
     // --- 4. Draw Cat Head ---
     const activeHeadKey = this.isBlinking ? 'HEAD_BLINK' : 'HEAD_OPEN';
-    const headGrid = this.customPartsMapping[activeHeadKey] || DEFAULT_SPRITES[activeHeadKey];
-    const headColors = getColorsForSlot(activeHeadKey);
+    const headSprite = DEFAULT_SPRITES[activeHeadKey];
+    const headMatrix = this.customPartsMapping[activeHeadKey] || getSpriteMatrix(headSprite);
+    const headColors = this.getColorsForSlot(activeHeadKey, headSprite);
     
-    const visibleHeadHeight = this.getVisibleHeight(headGrid);
-    const finalHeadDy = (DEFAULT_SPRITES.POPTART.length - visibleHeadHeight) + this.headDy;
+    const visibleHeadHeight = this.getVisibleHeight(headMatrix);
+    const finalHeadDy = (getSpriteMatrix(DEFAULT_SPRITES.POPTART).length - visibleHeadHeight) + this.headDy;
     const headXOffsets = [-1, 0, 1, 0];
-    this.drawGrid(ctx, headGrid, px + (this.headDx + headXOffsets[frame]) * s, py + finalHeadDy * s, headColors);
+    this.drawGrid(ctx, headMatrix, px + (this.headDx + headXOffsets[frame]) * s, py + finalHeadDy * s, headColors);
   }
 }
 

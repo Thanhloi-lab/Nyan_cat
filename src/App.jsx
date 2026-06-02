@@ -1,4 +1,5 @@
 import { useState, useContext } from 'react';
+import ReactDOM from 'react-dom';
 import { AppProvider, AppContext } from './context/AppContext';
 import CanvasPreview from './components/CanvasPreview';
 import PixelEditor from './components/PixelEditor';
@@ -70,10 +71,11 @@ function AppContent() {
           <ModelAssembler />
         </main>
 
-        {toastMessage && (
+        {toastMessage && ReactDOM.createPortal(
           <div className="toast-notification">
             <span>{toastMessage}</span>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     );
@@ -156,10 +158,11 @@ function AppContent() {
         {/* Right side parameters columns */}
         <ControlSidebar />
       </main>
-      {toastMessage && (
+      {toastMessage && ReactDOM.createPortal(
         <div className="toast-notification">
           <span>{toastMessage}</span>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

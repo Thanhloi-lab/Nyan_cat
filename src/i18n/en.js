@@ -184,6 +184,7 @@ const en = {
     },
     btnSave: 'Save to My Library',
     btnDelete: 'Delete Part',
+    isAnimationFrameOnlyLabel: 'Animation frame part only (Hidden from main assembly list)',
     sectionPaletteTitle: 'Custom Color Palette',
     defaultPalette: 'Default Nyan Theme (Dynamic)',
     btnExportPalette: 'Export Palette JSON',

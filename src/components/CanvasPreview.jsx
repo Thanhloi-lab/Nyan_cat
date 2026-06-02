@@ -6,6 +6,8 @@ import {
   RainbowTrail,
   PALETTES,
   DEFAULT_SPRITES,
+  getSpriteMatrix,
+  getSpriteColors,
 } from "../utils/nyanRenderer";
 import { Play, Pause } from "lucide-react";
 
@@ -22,7 +24,7 @@ export default function CanvasPreview() {
 
   const canvasRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const simulationTimeRef = useRef(null);
 
   // Keep rendering loop parameters synced using refs to avoid recreate loops
   const renderStateRef = useRef({
@@ -86,7 +88,9 @@ export default function CanvasPreview() {
         // Unconditionally update simulation time/secondsElapsed if playing
         if (state.isPlaying) {
           state.secondsElapsed += state.frameInterval / 1000;
-          setSecondsElapsed(state.secondsElapsed);
+          if (simulationTimeRef.current) {
+            simulationTimeRef.current.textContent = state.secondsElapsed.toFixed(1) + "s";
+          }
         }
 
         // 1. Draw Widescreen Background based on configuration
@@ -206,36 +210,41 @@ export default function CanvasPreview() {
 
             // Retrieve grid details
             let partGrid;
+            let partColors = null;
             let width = 0;
             let height = 0;
 
             if (liveEditingPartRef.current && liveEditingPartRef.current.key === partName && liveEditingPartRef.current.data) {
               partGrid = liveEditingPartRef.current.data;
+              partColors = liveEditingPartRef.current.palette;
               width = partGrid[0] ? partGrid[0].length : 0;
               height = partGrid.length;
             } else {
               const custom = customParts[partName];
               if (custom) {
-                partGrid = custom.data;
+                partGrid = custom.matrix || custom.data;
+                partColors = custom.colors || custom.palette;
                 width = custom.width;
                 height = custom.height;
               } else if (DEFAULT_SPRITES[partName]) {
-                partGrid = DEFAULT_SPRITES[partName];
-                height = partGrid.length;
-                width = partGrid[0].length;
+                const sprite = DEFAULT_SPRITES[partName];
+                partGrid = getSpriteMatrix(sprite);
+                partColors = sprite && !Array.isArray(sprite) ? sprite.colors : null;
+                height = partGrid ? partGrid.length : 0;
+                width = partGrid && partGrid[0] ? partGrid[0].length : 0;
               }
             }
 
             if (!partGrid) return;
 
-            // Evaluate Color Map to match custom settings
+            // Build color map: part's own colors take priority, then global settings fallback
             const skin =
               PALETTES.skins[settings.skinStyle] || PALETTES.skins.classic;
             const pop =
               PALETTES.poptarts[settings.poptartStyle] ||
               PALETTES.poptarts.strawberry;
 
-            const colorMap = {
+            const baseColorMap = {
               0: "transparent",
               1: "#000000",
               2: settings.customSkinColor || skin.fill,
@@ -246,6 +255,11 @@ export default function CanvasPreview() {
               7: "#ffffff",
               8: "#ff9999",
             };
+
+            const isSystemSprite = DEFAULT_SPRITES[partName] !== undefined;
+            const colorMap = (partColors && !isSystemSprite)
+              ? { ...baseColorMap, ...partColors }
+              : baseColorMap;
 
             const s = settings.scale;
 
@@ -339,8 +353,8 @@ export default function CanvasPreview() {
         <div className="status-segment">
           <span>
             Simulation Time:{" "}
-            <strong className="text-yellow">
-              {secondsElapsed.toFixed(1)}s
+            <strong className="text-yellow" ref={simulationTimeRef}>
+              0.0s
             </strong>
           </span>
         </div>
