@@ -16,7 +16,8 @@ export default function ExportPanel() {
     customPalettes,
     importCustomPalette,
     deleteCustomPalette,
-    setToastMessage
+    setToastMessage,
+    defaultSprites
   } = useContext(AppContext);
 
   // Video recording states
@@ -50,7 +51,9 @@ export default function ExportPanel() {
         headDx: settings.headDx,
         headDy: settings.headDy,
         customParts,
-        bindings
+        bindings,
+        defaultSprites,
+        trailSettings: { enabled: false }
       });
 
       // Pass custom color variables

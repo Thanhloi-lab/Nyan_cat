@@ -6,6 +6,8 @@ import ColorPicker from './ColorPicker';
 const ColorPaletteManager = React.memo(({
   localColors,
   setLocalColors,
+  baseColorMap = null,
+  displayColors = null,
   activeColor,
   setActiveColor,
   selectedPaletteName,
@@ -24,6 +26,7 @@ const ColorPaletteManager = React.memo(({
 
   const [paletteSaveName, setPaletteSaveName] = useState('');
   const [newBrushColor, setNewBrushColor] = useState('#ffffff');
+  const resolvedColors = displayColors || localColors;
 
   // --- Opacity helpers (store color as #rrggbbaa, 8-digit hex) ---
   const hexToRgba = (hex) => {
@@ -35,12 +38,6 @@ const ColorPaletteManager = React.memo(({
     return `rgba(${r},${g},${b},${a.toFixed(3)})`;
   };
 
-  // Returns 0–100 integer opacity from hex
-  const getOpacity = (hex) => {
-    if (!hex || hex.length < 8) return 100;
-    return Math.round((parseInt(hex.slice(7, 9), 16) / 255) * 100);
-  };
-
   // Returns base 6-digit hex from 8-digit
   const getBaseHex = (hex) => (hex && hex.length >= 7 ? hex.slice(0, 7) : (hex || '#000000'));
 
@@ -50,17 +47,12 @@ const ColorPaletteManager = React.memo(({
     return `${baseHex.slice(0, 7)}${alpha}`;
   };
 
-  const handleOpacityChange = (idx, opacity) => {
-    const base = getBaseHex(localColors[idx]);
-    setLocalColors(prev => ({ ...prev, [idx]: buildHex(base, opacity) }));
-  };
-
   const colorMap = useMemo(() => ({
     0: 'transparent',
     ...Object.fromEntries(
-      Object.entries(localColors).map(([k, v]) => [k, hexToRgba(v)])
+      Object.entries(resolvedColors).map(([k, v]) => [k, hexToRgba(v)])
     )
-  }), [localColors]);
+  }), [resolvedColors]);
 
   const handleSelectTemplateColor = (hex) => {
     const base = hex.slice(0, 7).toLowerCase();
@@ -69,7 +61,7 @@ const ColorPaletteManager = React.memo(({
     );
     if (existingIdx) {
       setActiveColor(parseInt(existingIdx));
-      setToastMessage(t('pixelEditor.toasts.colorSelected', { index: existingIdx }) || `🎨 Đã chọn cọ màu #${existingIdx}`);
+      setToastMessage(t('pixelEditor.toasts.colorSelected', { index: existingIdx }));
     } else {
       const nextIdx = Math.max(0, ...Object.keys(localColors).map(Number)) + 1;
       setLocalColors((prev) => ({
@@ -77,20 +69,20 @@ const ColorPaletteManager = React.memo(({
         [nextIdx]: buildHex(hex.slice(0, 7), 100)
       }));
       setActiveColor(nextIdx);
-      setToastMessage(t('pixelEditor.toasts.colorAdded', { index: nextIdx }) || `🎨 Đã thêm màu mới vào cọ vẽ #${nextIdx}!`);
+      setToastMessage(t('pixelEditor.toasts.colorAdded', { index: nextIdx }));
     }
   };
 
   const handleSavePalettePackage = () => {
     const name = paletteSaveName.trim();
     if (!name) {
-      alert(t('pixelEditor.errors.missingPaletteName') || '⚠️ Vui lòng nhập tên gói màu!');
+      alert(t('pixelEditor.errors.missingPaletteName'));
       return;
     }
     importCustomPalette(name, { ...localColors });
     setSelectedPaletteName(name);
     setPaletteSaveName('');
-    setToastMessage(t('pixelEditor.toasts.paletteSaved', { name }) || `🎨 Đã lưu gói màu "${name}" vào thư viện!`);
+    setToastMessage(t('pixelEditor.toasts.paletteSaved', { name }));
   };
 
   const handleColorChange = (idx, hex) => {
@@ -103,7 +95,7 @@ const ColorPaletteManager = React.memo(({
       (k) => Number(k) !== Number(idx) && getBaseHex(localColors[k]).toLowerCase() === base
     );
     if (duplicate) {
-      setToastMessage(`⚠️ Màu ${base.toUpperCase()} đã có ở cọ vẽ #${duplicate}!`);
+      setToastMessage(t('pixelEditor.toasts.colorDuplicated', { base: base.toUpperCase(), duplicate }));
       setLocalColors(prev => ({ ...prev, [idx]: originalHex }));
     }
   };
@@ -132,16 +124,16 @@ const ColorPaletteManager = React.memo(({
         const keys = Object.keys(colors);
         const isValid = keys.length > 0 && keys.every(k => typeof colors[k] === 'string' && colors[k].startsWith('#'));
         if (!isValid) {
-          alert(t('pixelEditor.errors.invalidPalette') || '⚠️ File JSON không hợp lệ! Phải chứa các key trỏ tới mã màu HEX.');
+          alert(t('pixelEditor.errors.invalidPalette'));
           return;
         }
         importCustomPalette(name, colors, labels);
         setSelectedPaletteName(name);
         mergePalette(colors, labels);
-        setToastMessage(t('pixelEditor.toasts.paletteLoaded', { name }) || `🎨 Đã nạp gói màu "${name}" thành công!`);
+        setToastMessage(t('pixelEditor.toasts.paletteLoaded', { name }));
       } catch (err) {
         console.error(err);
-        alert(t('pixelEditor.errors.paletteParseError') || '❌ Lỗi khi đọc file JSON gói màu!');
+        alert(t('pixelEditor.errors.paletteParseError'));
       }
     };
     reader.readAsText(file);
@@ -167,16 +159,16 @@ const ColorPaletteManager = React.memo(({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    setToastMessage(t('pixelEditor.toasts.paletteExported') || '📤 Đã xuất gói màu thành công!');
+    setToastMessage(t('pixelEditor.toasts.paletteExported'));
   };
 
   const handlePaletteDelete = () => {
     if (selectedPaletteName === 'default') return;
-    if (window.confirm(t('pixelEditor.confirm.deletePalette', { name: selectedPaletteName }) || `Gỡ bỏ gói màu "${selectedPaletteName}" khỏi danh sách?`)) {
+    if (window.confirm(t('pixelEditor.confirm.deletePalette', { name: selectedPaletteName }))) {
       const name = selectedPaletteName;
       setSelectedPaletteName('default');
       deleteCustomPalette(name);
-      setToastMessage(t('pixelEditor.toasts.paletteDeleted', { name }) || `🗑️ Đã gỡ gói màu "${name}".`);
+      setToastMessage(t('pixelEditor.toasts.paletteDeleted', { name }));
     }
   };
 
@@ -190,7 +182,7 @@ const ColorPaletteManager = React.memo(({
           value={selectedPaletteName}
           onChange={(e) => setSelectedPaletteName(e.target.value)}
         >
-          <option value="default">{t('pixelEditor.defaultPalette') || 'Default Nyan Theme (Dynamic)'}</option>
+          <option value="default">{t('pixelEditor.defaultPalette')}</option>
           {Object.keys(customPalettes).map((name) => (
             <option key={name} value={name}>
               🎨 {name}
@@ -202,25 +194,26 @@ const ColorPaletteManager = React.memo(({
           className="btn btn-secondary btn-small"
           style={{ padding: '0 10px', background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.3)', color: '#00e5ff', fontWeight: 'bold' }}
           onClick={() => {
-            if (window.confirm(t('pixelEditor.confirm.applyPalette') || 'Áp dụng toàn bộ gói màu này làm bảng cọ vẽ hiện tại?')) {
+            if (window.confirm(t('pixelEditor.confirm.applyPalette'))) {
               mergePalette(currentTemplateColors, currentTemplateLabels);
-              setToastMessage(t('pixelEditor.toasts.paletteApplied') || '🎨 Đã áp dụng gói màu vào cọ vẽ.');
+              setToastMessage(t('pixelEditor.toasts.paletteApplied'));
             }
           }}
-          title={t('pixelEditor.tooltipApplyPalette') || "Áp dụng toàn bộ gói màu làm cọ vẽ"}
+          title={t('pixelEditor.tooltipApplyPalette')}
         >
-          {t('pixelEditor.btnApplyPalette') || 'Apply All'}
+          {t('pixelEditor.btnApplyPalette')}
         </button>
       </div>
 
       {/* Clickable Template Color Bubbles */}
       <div className="template-colors-bubbles font-sans" style={{ marginTop: '2px' }}>
         <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          {t('pixelEditor.templateColorsLabel') || 'Bảng Màu Mẫu (Click để lấy màu):'}
+          {t('pixelEditor.templateColorsLabel')}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', padding: '8px' }}>
           {Object.keys(currentTemplateColors).map((k) => {
             const hex = currentTemplateColors[k];
+            const displayHex = baseColorMap && baseColorMap[k] ? baseColorMap[k] : hex;
             return (
               <div
                 key={k}
@@ -229,14 +222,14 @@ const ColorPaletteManager = React.memo(({
                   width: '20px',
                   height: '20px',
                   borderRadius: '4px',
-                  backgroundColor: hex,
+                  backgroundColor: displayHex,
                   cursor: 'pointer',
                   border: '1px solid rgba(255,255,255,0.15)',
                   boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
                   transition: 'transform 0.1s ease',
                 }}
                 className="template-color-bubble"
-                title={hex}
+                title={displayHex}
               />
             );
           })}
@@ -246,14 +239,14 @@ const ColorPaletteManager = React.memo(({
       {/* Color Brushes List */}
       <div style={{ borderTop: '1px dashed rgba(255,255,255,0.06)', paddingTop: '10px', marginTop: '4px' }}>
         <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          🎨 {t('pixelEditor.sectionBrushTitle') || 'Select Paint Brush'}:
+          🎨 {t('pixelEditor.sectionBrushTitle')}:
         </div>
         <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-          {t('pixelEditor.brushHint') || '💡 Nhấp vào ô màu của cọ vẽ bất kỳ để sửa màu tùy chọn!'}
+          {t('pixelEditor.brushHint')}
         </p>
         <div className="brushes-grid">
           {[0, ...Object.keys(localColors).map(Number).sort((a, b) => a - b)].map((idx, gridIdx) => {
-            const label = idx === 0 ? 'Transparent' : (localColors[idx] || '#000000');
+            const label = idx === 0 ? 'Transparent' : (resolvedColors[idx] || '#000000');
             return (
               <div
                 key={idx}
@@ -286,7 +279,7 @@ const ColorPaletteManager = React.memo(({
                       zIndex: 10,
                       transition: 'all 0.15s ease'
                     }}
-                    title={t('pixelEditor.tooltipDeleteBrush') || "Xóa cọ vẽ này"}
+                    title={t('pixelEditor.tooltipDeleteBrush')}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = '#ff3366';
                       e.currentTarget.style.color = '#fff';
@@ -302,10 +295,10 @@ const ColorPaletteManager = React.memo(({
                 {idx > 0 ? (
                   <ColorPicker
                     className={`brush-color-preview-box color-${idx}`}
-                    color={localColors[idx] || '#ffffff'}
+                    color={resolvedColors[idx] || '#ffffff'}
                     onChange={(newHex) => handleColorChange(idx, newHex)}
                     onCommit={(newHex, originalHex) => handleColorCommit(idx, newHex, originalHex)}
-                    title={t('pixelEditor.tooltipColorPicker') || "Nhấp vào để chọn màu tùy ý"}
+                    title={t('pixelEditor.tooltipColorPicker')}
                     align={gridIdx % 2 === 0 ? 'left' : 'right'}
                   />
                 ) : (
@@ -325,12 +318,12 @@ const ColorPaletteManager = React.memo(({
                     <span className="brush-label">{label}</span>
                   ) : (
                     <span
-                      className="brush-label-input"
+                      className="brush-label"
                       style={{
                         background: 'none',
                         border: 'none',
                         borderBottom: '1px dashed rgba(255,255,255,0.15)',
-                        color: '#aaa',
+                        color: '#ffffffff',
                         fontSize: '10px',
                         fontFamily: 'monospace',
                         padding: '2px 0',
@@ -339,34 +332,9 @@ const ColorPaletteManager = React.memo(({
                         boxSizing: 'border-box'
                       }}
                       onClick={(e) => e.stopPropagation()}
-                    >{getBaseHex(localColors[idx]).toUpperCase()}</span>
+                    >{getBaseHex(resolvedColors[idx]).toUpperCase()}</span>
                   )}
                 </div>
-                {/* Opacity slider – only for real color brushes */}
-                {idx > 0 && (
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    style={{ width: '100%', padding: '4px 2px 2px', boxSizing: 'border-box' }}
-                  >
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={getOpacity(localColors[idx])}
-                      onChange={(e) => handleOpacityChange(idx, parseInt(e.target.value))}
-                      title={`Opacity: ${getOpacity(localColors[idx])}%`}
-                      style={{
-                        width: '100%',
-                        height: '3px',
-                        accentColor: getBaseHex(localColors[idx]),
-                        cursor: 'pointer',
-                      }}
-                    />
-                    <div style={{ textAlign: 'center', fontSize: '9px', color: '#666', marginTop: '1px', fontFamily: 'monospace' }}>
-                      {getOpacity(localColors[idx])}%
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })}
@@ -382,9 +350,9 @@ const ColorPaletteManager = React.memo(({
               height: '32px',
               borderRadius: '6px',
             }}
-            title="Chọn màu mới"
+            title={t('pixelEditor.tooltipColorPicker')}
           />
-          <span style={{ fontSize: '11px', color: '#aaa', fontFamily: 'monospace', minWidth: '60px' }}>
+          <span className="brush-label">
             {newBrushColor.toUpperCase()}
           </span>
           <button
@@ -403,10 +371,10 @@ const ColorPaletteManager = React.memo(({
               const nextIdx = Math.max(0, ...Object.keys(localColors).map(Number)) + 1;
               setLocalColors(prev => ({ ...prev, [nextIdx]: buildHex(newBrushColor.slice(0, 7), 100) }));
               setActiveColor(nextIdx);
-              setToastMessage(t('pixelEditor.toasts.colorAdded', { index: nextIdx }) || `🎨 Đã thêm màu mới vào cọ vẽ #${nextIdx}!`);
+              setToastMessage(t('pixelEditor.toasts.colorAdded', { index: nextIdx }));
             }}
           >
-            ➕ {t('pixelEditor.btnAddBrush') || 'Thêm Cọ Màu Mới'}
+            ➕ {t('pixelEditor.btnAddBrush')}
           </button>
         </div>
       </div>
@@ -414,7 +382,7 @@ const ColorPaletteManager = React.memo(({
       {/* Save current brushes as a reusable package */}
       <div className="save-palette-package-box font-sans" style={{ borderTop: '1px dashed rgba(255,255,255,0.06)', paddingTop: '10px', marginTop: '4px' }}>
         <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          💾 {t('pixelEditor.savePaletteTitle') || 'Lưu cọ vẽ thành gói màu riêng:'}
+          💾 {t('pixelEditor.savePaletteTitle')}
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <input
@@ -423,14 +391,14 @@ const ColorPaletteManager = React.memo(({
             style={{ flex: 1, fontSize: '11px', padding: '6px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border-glow)', color: '#fff', borderRadius: '4px', boxSizing: 'border-box' }}
             value={paletteSaveName}
             onChange={(e) => setPaletteSaveName(e.target.value)}
-            placeholder={t('pixelEditor.savePalettePlaceholder') || 'Tên gói màu mới...'}
+            placeholder={t('pixelEditor.savePalettePlaceholder')}
           />
           <button
             className="btn btn-primary btn-small"
             style={{ padding: '0 10px', fontSize: '11px' }}
             onClick={handleSavePalettePackage}
           >
-            {t('pixelEditor.btnSavePalette') || 'Lưu Gói'}
+            {t('pixelEditor.btnSavePalette')}
           </button>
         </div>
       </div>
@@ -453,7 +421,7 @@ const ColorPaletteManager = React.memo(({
             color: '#00ffff'
           }}
         >
-          📥 {t('pixelEditor.btnImportPalette') || 'Nạp Gói Màu (.json)'}
+          📥 {t('pixelEditor.btnImportPalette')}
           <input
             type="file"
             accept=".json"
@@ -468,7 +436,7 @@ const ColorPaletteManager = React.memo(({
               className="btn btn-secondary btn-small"
               style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.05)', fontSize: '11px' }}
               onClick={handlePaletteExport}
-              title={t('pixelEditor.btnExportPalette') || "Xuất bảng màu JSON"}
+              title={t('pixelEditor.btnExportPalette')}
             >
               📤
             </button>
@@ -476,7 +444,7 @@ const ColorPaletteManager = React.memo(({
               className="btn btn-secondary btn-small"
               style={{ padding: '6px 10px', background: 'rgba(255,0,85,0.05)', color: '#ff3366', border: '1px solid rgba(255,0,85,0.2)', fontSize: '11px' }}
               onClick={handlePaletteDelete}
-              title={t('pixelEditor.btnDeletePalette') || "Gỡ bảng màu này"}
+              title={t('pixelEditor.btnDeletePalette')}
             >
               <Trash2 size={12} />
             </button>

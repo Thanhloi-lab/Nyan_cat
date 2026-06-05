@@ -5,7 +5,6 @@ import ColorPicker from './ColorPicker';
 
 const DYNAMIC_SLOT_IDS = [
   'HEAD_OPEN',
-  'HEAD_BLINK',
   'POPTART',
   'TAIL_UP',
   'TAIL_MID',
@@ -17,6 +16,8 @@ const DYNAMIC_SLOT_IDS = [
 
 export default function ControlSidebar() {
   const {
+    background,
+    setBackground,
     settings,
     updateSetting,
     t,
@@ -230,17 +231,69 @@ export default function ControlSidebar() {
                 {t('sidebar.noProfilesHint')}
               </div>
             ) : (
-              <select
-                className="select-custom"
-                value={activeProfileId || ''}
-                onChange={(e) => loadProfile(e.target.value)}
-                style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border-glow)', color: '#fff', borderRadius: '4px', padding: '6px', outline: 'none' }}
-              >
-                <option value="" disabled>{t('sidebar.chooseProfile')}</option>
-                {Object.keys(profiles).map((id) => (
-                  <option key={id} value={id}>{profiles[id].name}</option>
-                ))}
-              </select>
+              <>
+                <select
+                  className="select-custom"
+                  value={activeProfileId || ''}
+                  onChange={(e) => loadProfile(e.target.value)}
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border-glow)', color: '#fff', borderRadius: '4px', padding: '6px', outline: 'none' }}
+                >
+                  <option value="" disabled>{t('sidebar.chooseProfile')}</option>
+                  {Object.keys(profiles).map((id) => (
+                    <option key={id} value={id}>{profiles[id].name}</option>
+                  ))}
+                </select>
+
+                <div className="control-group animate-fade-in" style={{ marginTop: '12px', marginBottom: '4px' }}>
+                  <label className="control-label" style={{ fontSize: '10px', color: '#a0aab5', display: 'block', marginBottom: '4px' }}>
+                    {t('sidebar.assemblerMotionStyle') || 'Assembler Motion Style'}
+                  </label>
+                  <div className="btn-toggle-group" style={{ display: 'flex', gap: '2px', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--color-border-glow)', borderRadius: '6px', padding: '2px' }}>
+                    <button
+                      className={`toggle-btn ${settings.assemblerMovement === 'static' || !settings.assemblerMovement ? 'active' : ''}`}
+                      onClick={() => updateSetting('assemblerMovement', 'static')}
+                      style={{ flex: 1, fontSize: '9px', padding: '5px 2px', whiteSpace: 'nowrap' }}
+                    >
+                      {t('sidebar.motionStatic') || 'Static'}
+                    </button>
+                    <button
+                      className={`toggle-btn ${settings.assemblerMovement === 'hover' ? 'active' : ''}`}
+                      onClick={() => updateSetting('assemblerMovement', 'hover')}
+                      style={{ flex: 1, fontSize: '9px', padding: '5px 2px', whiteSpace: 'nowrap' }}
+                    >
+                      {t('sidebar.motionHover') || 'Hover'}
+                    </button>
+                    <button
+                      className={`toggle-btn ${settings.assemblerMovement === 'crosser' ? 'active' : ''}`}
+                      onClick={() => updateSetting('assemblerMovement', 'crosser')}
+                      style={{ flex: 1, fontSize: '9px', padding: '5px 2px', whiteSpace: 'nowrap' }}
+                    >
+                      {t('sidebar.motionCrosser') || 'Crosser'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="control-group animate-fade-in" style={{ marginTop: '12px' }}>
+                  <label className="control-label" style={{ fontSize: '10px', color: '#a0aab5', display: 'block', marginBottom: '4px' }}>
+                    {t('sidebar.backgroundStyle') || 'Background Style'}
+                  </label>
+                  <select
+                    className="select-custom"
+                    value={background.type}
+                    onChange={(e) => {
+                      const type = e.target.value;
+                      if (type === 'transparent') setBackground({ type: 'transparent', value: '' });
+                      else if (type === 'color') setBackground({ type: 'color', value: '#0f0f1b' });
+                      else if (type === 'starfield') setBackground({ type: 'starfield', value: '' });
+                    }}
+                    style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--color-border-glow)', color: '#fff', borderRadius: '4px', padding: '6px', outline: 'none' }}
+                  >
+                    <option value="transparent">Checkerboard (Transparent)</option>
+                    <option value="color">Space Blue</option>
+                    <option value="starfield">🌌 Starfield</option>
+                  </select>
+                </div>
+              </>
             )}
           </div>
         )}

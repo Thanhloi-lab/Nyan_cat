@@ -30,6 +30,10 @@ const en = {
     movementMode: 'Movement Mode',
     activeProfile: 'Active Custom Profile',
     noProfilesHint: 'No profiles yet. Create one in Assembler Studio!',
+    assemblerMotionStyle: 'Assembler Motion Style',
+    motionStatic: 'Static',
+    motionHover: 'Hover',
+    motionCrosser: 'Crosser',
     chooseProfile: '-- Select profile --',
     pixelScale: 'Pixel Art Scale',
     fps: 'Running Speed (FPS)',
@@ -78,15 +82,15 @@ const en = {
     monochrome: 'Monochrome Wave'
   },
   slots: {
-    HEAD_OPEN: 'Cat Head (Eyes Open)',
-    HEAD_BLINK: 'Cat Head (Blinking)',
+    HEAD_OPEN: 'Cat Head',
     POPTART: 'Pop-Tart Toast Body',
     TAIL_UP: 'Tail (Upward wave)',
     TAIL_MID: 'Tail (Horizontal wave)',
     TAIL_DOWN: 'Tail (Downward wave)',
     LEG_DOWN: 'Leg (Straight down)',
     LEG_FRONT: 'Leg (Kick front)',
-    LEG_BACK: 'Leg (Kick back)'
+    LEG_BACK: 'Leg (Kick back)',
+    TRAIL: 'Trail (Procedural Waving)'
   },
   pixelEditor: {
     canvasTag: 'PIXEL ART EDITOR',
@@ -96,12 +100,14 @@ const en = {
       saveFailed: 'Save failed: {error}',
       invalidPalette: '⚠️ Invalid JSON! Must contain keys 1-8 pointing to hex color codes.',
       paletteParseError: '❌ Error parsing custom palette JSON!',
-      missingPaletteName: '⚠️ Please enter a palette name!'
+      missingPaletteName: '⚠️ Please enter a palette name!',
+      missingPackageName: '⚠️ Please enter new package name!'
     },
     confirm: {
       deletePart: 'Delete part "{name}" from library? This also removes it from layers/animations using it.',
       clearGrid: 'Clear current drawing grid?',
-      deletePalette: 'Do you want to unload custom palette "{name}" from the list?'
+      deletePalette: 'Do you want to unload custom palette "{name}" from the list?',
+      applyPalette: 'Apply entire palette as the current drawing brush?',
     },
     toasts: {
       savedAndBound: '💾 Saved "{name}" and auto-bound to motion slot!',
@@ -113,8 +119,11 @@ const en = {
       paletteDeleted: '🗑️ Unloaded custom palette "{name}".',
       paletteSaved: '🎨 Saved palette "{name}" to library!',
       colorSelected: '🎨 Selected color brush #{index}',
-      colorAdded: '🎨 Added new color brush #{index}!'
+      colorAdded: '🎨 Added new color brush #{index}!',
+      colorDuplicated: '⚠️ Color {base} already exists in brush #{duplicate}!',
+      paletteApplied: '🎨 Applied palette to brushes.',
     },
+    tooltipApplyPalette: 'Apply entire palette as current drawing brush',
     colors: {
       0: 'Eraser (Transparent)',
       1: 'Outline (Black)',
@@ -151,7 +160,6 @@ const en = {
       headGroup: '🐱 CAT HEAD (HEAD)',
       headAll: '🌟 All Head States (Open & Blink)',
       headOpen: '👁️ Eyes Open (HEAD_OPEN)',
-      headBlink: '😑 Eyes Closed (HEAD_BLINK)',
       bodyGroup: '🥞 TOAST BODY (BODY)',
       poptart: '🍪 Pop-Tart Toast Body (POPTART)',
       tailGroup: '🐕 CAT TAIL (TAIL)',
@@ -199,7 +207,23 @@ const en = {
     brushHint: '💡 Click the color box of any brush to edit with a custom color!',
     tooltipColorPicker: 'Click to select custom color',
     sectionExportTitle: 'Live Export Array Code',
-    btnCopy: 'Copy'
+    btnCopy: 'Copy',
+    tooltipDeleteBrush: 'Delete this color brush',
+    savePaletteTitle: 'Save current brushes as a reusable package',
+    transparent: 'Transparent',
+    readOnlyTag: 'Default model - readonly',
+    readOnlyLabel: 'Readonly',
+    btnClear: 'Clear',
+    readOnlyGridHint: 'Default Nyan sprite is in readonly mode. Use live export code panel on the right to copy matrix.',
+    dragHint: 'Click the color box of any brush to edit with a custom color!',
+    readOnlyTitle: 'Default Sprite - Readonly & Copy Matrix',
+    readOnlyNotice: 'This is the default system component of Nyan Cat. You cannot edit, overwrite, or delete this component.',
+    readOnlyCopyTip: '💡You can copy 2D matrix source below to use or re-create the new model',
+    sectionSaveTitle: 'Save part details',
+    partNameLabel: 'Name (English Keys Recommended)',
+    packageLabel: 'Package',
+    newPackageOption: 'Add new package...',
+    newPackageInputPlaceholder: 'Example: dog, robot, sword...'
   },
   exportPanel: {
     importSuccess: 'Project imported successfully!',
@@ -320,7 +344,19 @@ const en = {
       btnAddFrame: '➕ Add Frame',
       btnDeleteLastFrame: '➖ Delete Last Frame'
     },
+    trail: {
+      heading: '🥞 Procedural Trail Wave Configuration',
+      enabled: 'Enable procedural trail wave',
+      spacing: 'Trail segment spacing (Spacing):',
+      amplitude: 'Wave vibration amplitude (Amplitude):',
+      speedDivisor: 'Animation wave speed (Divisor - Higher is slower):',
+      waveType: 'Wave form geometry (Wave Type):',
+      typeBlocky: 'Blocky wave (Classic)',
+      typeSine: 'Smooth wave (Sine)',
+      hint: 'The trail wave is automatically simulated in the animation mode when a trail is active.'
+    },
     layers: {
+      stackTitle: 'Layer Stack Hierarchy (Z-Index Order)',
       emptyHint:
         'No parts on the Canvas yet. Click a part above to add it to the Canvas!',
       btnMoveUpTitle: 'Move forward (increase z-index)',
@@ -328,7 +364,16 @@ const en = {
       btnHideTitle: 'Hide layer',
       btnShowTitle: 'Show layer',
       btnDuplicateTitle: 'Duplicate layer',
-      btnDeleteTitle: 'Delete layer'
+      btnDeleteTitle: 'Delete layer',
+      isProceduralTrail: 'Use as Procedural Trail Wave'
+    },
+    systemProfile: {
+      readOnlyWarning: '⚠️ You are viewing a System Profile (Read-Only). Clone this profile to edit.',
+      btnClone: '➕ Clone Profile to Edit',
+      cloneNamePrompt: 'Enter name for cloned profile:',
+      cloneSuccess: 'Cloned system profile successfully!',
+      badge: 'SYSTEM / READ-ONLY',
+      btnCloneAction: 'Clone'
     },
     unsavedModal: {
       title: '⚠️ UNSAVED CHANGES',
@@ -363,7 +408,10 @@ const en = {
       noCustom: 'No custom packages found',
       confirmDelete: 'Permanently delete package "{name}" and all parts inside?',
       colorsTitle: 'Color Palette Packages',
-      noPalettes: 'No custom palettes loaded'
+      noPalettes: 'No custom palettes loaded',
+      import: 'Import Package',
+      importSuccess: 'Successfully imported package "{name}" ({count} parts)!',
+      importError: 'Error importing package: {error}'
     },
     search: {
       noResults: 'No matching parts found.',

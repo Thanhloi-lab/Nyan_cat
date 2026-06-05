@@ -9,7 +9,7 @@ import {
   Trash2
 } from "lucide-react";
 import MiniCanvasPreview from "./MiniCanvasPreview";
-import { DEFAULT_SPRITES, getSpriteMatrix } from "../utils/nyanRenderer";
+import { getSpriteMatrix } from "../utils/nyanRenderer";
 
 const LayerHierarchy = React.memo(({
   activeLayerId,
@@ -17,14 +17,18 @@ const LayerHierarchy = React.memo(({
   updateLayer,
   deleteLayer,
   duplicateLayer,
-  reorderLayer
+  reorderLayer,
+  activeProfileId
 }) => {
   const {
     layers,
     setLayers,
     customParts,
-    t
+    t,
+    defaultSprites
   } = useContext(AppContext);
+
+  const isReadOnly = activeProfileId === "system_default";
 
   const [draggedLayerId, setDraggedLayerId] = useState(null);
   const [dragOverLayerId, setDragOverLayerId] = useState(null);
@@ -32,6 +36,7 @@ const LayerHierarchy = React.memo(({
   const sortedLayers = [...layers].sort((a, b) => b.zIndex - a.zIndex);
 
   const handleLayerDrop = (targetId) => {
+    if (isReadOnly) return;
     if (!draggedLayerId || draggedLayerId === targetId) return;
     const sorted = [...layers].sort((a, b) => b.zIndex - a.zIndex);
     const dragIdx = sorted.findIndex((l) => l.id === draggedLayerId);
@@ -83,8 +88,8 @@ const LayerHierarchy = React.memo(({
               w = part.width;
               h = part.height;
               palette = part.colors || part.palette;
-            } else if (DEFAULT_SPRITES[layer.partName]) {
-              const sprite = DEFAULT_SPRITES[layer.partName];
+            } else if (defaultSprites && defaultSprites[layer.partName]) {
+              const sprite = defaultSprites[layer.partName];
               partData = getSpriteMatrix(sprite);
               palette = sprite && !Array.isArray(sprite) ? sprite.colors : null;
               h = partData ? partData.length : 0;
@@ -94,9 +99,10 @@ const LayerHierarchy = React.memo(({
             return (
               <div
                 key={layer.id}
-                draggable
-                onDragStart={() => setDraggedLayerId(layer.id)}
+                draggable={!isReadOnly}
+                onDragStart={() => !isReadOnly && setDraggedLayerId(layer.id)}
                 onDragOver={(e) => {
+                  if (isReadOnly) return;
                   e.preventDefault();
                   setDragOverLayerId(layer.id);
                 }}
@@ -104,7 +110,7 @@ const LayerHierarchy = React.memo(({
                   setDraggedLayerId(null);
                   setDragOverLayerId(null);
                 }}
-                onDrop={() => handleLayerDrop(layer.id)}
+                onDrop={() => !isReadOnly && handleLayerDrop(layer.id)}
                 className={`assembler-layer-hierarchy-card ${isSelected ? "active" : ""} ${
                   dragOverLayerId === layer.id ? "drag-over" : ""
                 }`}
@@ -120,7 +126,7 @@ const LayerHierarchy = React.memo(({
                     ? "1px dashed var(--color-neon-cyan)"
                     : "1px solid rgba(255,255,255,0.06)",
                   borderRadius: "6px",
-                  cursor: "pointer",
+                  cursor: isReadOnly ? "default" : "pointer",
                   transition: "all 0.15s ease",
                   gap: "10px",
                 }}
@@ -131,10 +137,11 @@ const LayerHierarchy = React.memo(({
                     display: "flex",
                     flexDirection: "column",
                     gap: "2px",
-                    cursor: "grab",
+                    cursor: isReadOnly ? "not-allowed" : "grab",
                     color: "rgba(255,255,255,0.2)",
+                    opacity: isReadOnly ? 0.3 : 1
                   }}
-                  title="Kéo thả để sắp thứ tự z-index"
+                  title={isReadOnly ? "Không thể sắp xếp z-index trong hồ sơ hệ thống" : "Kéo thả để sắp thứ tự z-index"}
                 >
                   <div style={{ width: "3px", height: "3px", background: "currentColor", borderRadius: "50%" }} />
                   <div style={{ width: "3px", height: "3px", background: "currentColor", borderRadius: "50%" }} />
@@ -191,71 +198,81 @@ const LayerHierarchy = React.memo(({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
-                    onClick={() => updateLayer(layer.id, { visible: !layer.visible })}
+                    onClick={() => { if (isReadOnly) return; updateLayer(layer.id, { visible: !layer.visible }); }}
+                    disabled={isReadOnly}
                     style={{
                       background: "none",
                       border: "none",
-                      color: layer.visible ? "#fff" : "#666",
-                      cursor: "pointer",
+                      color: isReadOnly ? "#444" : (layer.visible ? "#fff" : "#666"),
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
                       padding: "4px",
+                      opacity: isReadOnly ? 0.5 : 1
                     }}
-                    title={layer.visible ? "Ẩn Layer" : "Hiện Layer"}
+                    title={isReadOnly ? "Hồ sơ hệ thống chỉ đọc" : (layer.visible ? "Ẩn Layer" : "Hiện Layer")}
                   >
                     {layer.visible ? <Eye size={13} /> : <EyeOff size={13} />}
                   </button>
 
                   <button
-                    onClick={() => reorderLayer(layer.id, "up")}
+                    onClick={() => { if (isReadOnly) return; reorderLayer(layer.id, "up"); }}
+                    disabled={isReadOnly}
                     style={{
                       background: "none",
                       border: "none",
-                      color: "#fff",
-                      cursor: "pointer",
+                      color: isReadOnly ? "#444" : "#fff",
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
                       padding: "4px",
+                      opacity: isReadOnly ? 0.5 : 1
                     }}
-                    title="Đẩy lên trước"
+                    title={isReadOnly ? "Hồ sơ hệ thống chỉ đọc" : "Đẩy lên trước"}
                   >
                     <ArrowUp size={13} />
                   </button>
 
                   <button
-                    onClick={() => reorderLayer(layer.id, "down")}
+                    onClick={() => { if (isReadOnly) return; reorderLayer(layer.id, "down"); }}
+                    disabled={isReadOnly}
                     style={{
                       background: "none",
                       border: "none",
-                      color: "#fff",
-                      cursor: "pointer",
+                      color: isReadOnly ? "#444" : "#fff",
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
                       padding: "4px",
+                      opacity: isReadOnly ? 0.5 : 1
                     }}
-                    title="Đẩy xuống sau"
+                    title={isReadOnly ? "Hồ sơ hệ thống chỉ đọc" : "Đẩy xuống sau"}
                   >
                     <ArrowDown size={13} />
                   </button>
 
                   <button
-                    onClick={() => duplicateLayer(layer.id)}
+                    onClick={() => { if (isReadOnly) return; duplicateLayer(layer.id); }}
+                    disabled={isReadOnly}
                     style={{
                       background: "none",
                       border: "none",
-                      color: "#fff",
-                      cursor: "pointer",
+                      color: isReadOnly ? "#444" : "#fff",
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
                       padding: "4px",
+                      opacity: isReadOnly ? 0.5 : 1
                     }}
-                    title="Nhân bản layer"
+                    title={isReadOnly ? "Hồ sơ hệ thống chỉ đọc" : "Nhân bản layer"}
                   >
                     <Copy size={13} />
                   </button>
 
                   <button
-                    onClick={() => deleteLayer(layer.id)}
+                    onClick={() => { if (isReadOnly) return; deleteLayer(layer.id); }}
+                    disabled={isReadOnly}
                     style={{
                       background: "none",
                       border: "none",
-                      color: "#ff3366",
-                      cursor: "pointer",
+                      color: isReadOnly ? "#444" : "#ff3366",
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
                       padding: "4px",
+                      opacity: isReadOnly ? 0.5 : 1
                     }}
-                    title="Xóa Layer"
+                    title={isReadOnly ? "Hồ sơ hệ thống chỉ đọc" : "Xóa Layer"}
                   >
                     <Trash2 size={13} />
                   </button>

@@ -3,7 +3,6 @@ import { createContext, useState, useEffect, useRef } from 'react';
 import { DEFAULT_SPRITES, getSpriteMatrix } from '../utils/nyanRenderer';
 import { detectInitialLang, tFor } from '../i18n';
 
-
 export const AppContext = createContext();
 
 const LOCAL_STORAGE_KEY = 'nyan_studio_project_data';
@@ -22,6 +21,13 @@ const INITIAL_SETTINGS = {
   customFrostingColor: '#ff66cc',
   customCrustColor: '#ffa659',
   customSprinkleColor: '#ff007f',
+  trail: {
+    enabled: true,
+    spacing: 6,
+    waveType: 'blocky',
+    waveAmplitude: 1,
+    animationDivisor: 4
+  },
   language: detectInitialLang()
 };
 
@@ -76,6 +82,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const initialData = loadSavedData() || {};
+  const [systemProfileData, setSystemProfileData] = useState(null);
 
   // 1. Custom Parts Library (User-drawn pixel art parts)
   // Structured as: { [partName]: { name: string, width: number, height: number, data: 2D array, package?: string } }
@@ -190,30 +197,58 @@ export const AppProvider = ({ children }) => {
   // Maps a standard Nyan dynamic slot (e.g. 'HEAD_OPEN') to a user's custom part key
   const [bindings, setBindings] = useState(initialData.bindings || {
     HEAD_OPEN: 'default',
-    HEAD_BLINK: 'default',
     POPTART: 'default',
     TAIL_UP: 'default',
     TAIL_MID: 'default',
     TAIL_DOWN: 'default',
     LEG_DOWN: 'default',
     LEG_FRONT: 'default',
-    LEG_BACK: 'default'
+    LEG_BACK: 'default',
+    TRAIL: 'default'
   });
+
+  // 4.5 Default System Sprites loaded dynamically from JSON
+  const [defaultSprites, setDefaultSprites] = useState(DEFAULT_SPRITES);
+
+  useEffect(() => {
+    fetch('/defaultSprites.json?t=' + Date.now())
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          setDefaultSprites(data);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to dynamically load default sprites:', err);
+      });
+  }, []);
 
   // 5. General simulation settings
   const [settings, setSettings] = useState(
     initialData.settings ? { ...INITIAL_SETTINGS, ...initialData.settings } : INITIAL_SETTINGS
   );
 
-  // Load default model dynamically on start if localStorage is empty
+  // Load default model dynamically on start
   useEffect(() => {
-    const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!savedData) {
-      console.log('No user project in localStorage. Dynamically loading default model...');
-      fetch('/defaultProject.json')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data) {
+    fetch('/defaultProject.json?t=' + Date.now())
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          setSystemProfileData({
+            id: 'system_default',
+            name: 'Classic Nyan Cat',
+            resolution: { width: 1920, height: 462 },
+            layers: data.layers || [],
+            background: data.background || { type: 'starfield', value: '' },
+            settings: data.settings || {},
+            bindings: data.bindings || {},
+            isSystem: true
+          });
+
+          // Fallback init if localStorage is completely empty
+          const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (!savedData) {
+            console.log('No user project in localStorage. Dynamically loading default model...');
             if (data.customParts) {
               const upgraded = {};
               Object.keys(data.customParts).forEach((k) => {
@@ -236,11 +271,11 @@ export const AppProvider = ({ children }) => {
             if (data.bindings) setBindings(data.bindings);
             if (data.settings) setSettings({ ...INITIAL_SETTINGS, ...data.settings });
           }
-        })
-        .catch((err) => {
-          console.error('Failed to dynamically load default model:', err);
-        });
-    }
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to dynamically load default model:', err);
+      });
   }, []);
 
   // Auto-dismiss toast messages after 3 seconds
@@ -402,7 +437,7 @@ export const AppProvider = ({ children }) => {
 
   // Import default sprite into editor helper
   const getDefaultSpriteData = (spriteKey) => {
-    const raw = DEFAULT_SPRITES[spriteKey];
+    const raw = defaultSprites[spriteKey];
     if (!raw) return { width: 11, height: 11, data: Array(11).fill().map(() => Array(11).fill(0)) };
     const matrix = getSpriteMatrix(raw);
     const height = matrix.length;
@@ -412,6 +447,7 @@ export const AppProvider = ({ children }) => {
 
   // Add a layer to the Assembler
   const addLayer = (partName) => {
+    if (activeProfileId === 'system_default') return null;
     const newId = 'layer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     // Find highest z-index
     const maxZ = layers.length > 0 ? Math.max(...layers.map(l => l.zIndex)) : 0;
@@ -432,6 +468,7 @@ export const AppProvider = ({ children }) => {
 
   // Update a single layer's property (x, y, zIndex, visible)
   const updateLayer = (id, updates) => {
+    if (activeProfileId === 'system_default') return;
     setLayers((prev) =>
       prev.map((layer) => (layer.id === id ? { ...layer, ...updates } : layer))
     );
@@ -439,11 +476,13 @@ export const AppProvider = ({ children }) => {
 
   // Delete a layer
   const deleteLayer = (id) => {
+    if (activeProfileId === 'system_default') return;
     setLayers((prev) => prev.filter((layer) => layer.id !== id));
   };
 
   // Duplicate a layer
   const duplicateLayer = (id) => {
+    if (activeProfileId === 'system_default') return;
     const target = layers.find((l) => l.id === id);
     if (!target) return;
     const newId = 'layer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -461,6 +500,7 @@ export const AppProvider = ({ children }) => {
 
   // Move layer order (up / down in z-index)
   const reorderLayer = (id, direction) => {
+    if (activeProfileId === 'system_default') return;
     // direction: 'up' (higher z-index) or 'down' (lower z-index)
     const sorted = [...layers].sort((a, b) => a.zIndex - b.zIndex);
     const index = sorted.findIndex((l) => l.id === id);
@@ -507,6 +547,16 @@ export const AppProvider = ({ children }) => {
   };
 
   const loadProfile = (id) => {
+    if (id === 'system_default') {
+      if (systemProfileData) {
+        setActiveProfileId('system_default');
+        setLayers(systemProfileData.layers || []);
+        setBackground(systemProfileData.background || { type: 'starfield', value: '' });
+        setResolution(systemProfileData.resolution || { width: 1920, height: 462 });
+        localStorage.setItem('nyan_studio_active_profile_id', 'system_default');
+      }
+      return;
+    }
     const profile = profiles[id];
     if (profile) {
       setActiveProfileId(id);
@@ -518,7 +568,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const saveProfile = () => {
-    if (!activeProfileId) return;
+    if (!activeProfileId || activeProfileId === 'system_default') return;
     setProfiles((prev) => {
       const next = {
         ...prev,
@@ -537,6 +587,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteProfile = (id) => {
+    if (id === 'system_default') return;
     setProfiles((prev) => {
       const next = { ...prev };
       delete next[id];
@@ -550,6 +601,49 @@ export const AppProvider = ({ children }) => {
       setResolution({ width: 1920, height: 462 });
       localStorage.removeItem('nyan_studio_active_profile_id');
     }
+  };
+
+  const cloneProfile = (id, newName) => {
+    let sourceLayers = [];
+    let sourceBg = { type: 'transparent', value: '' };
+    let sourceRes = { width: 1920, height: 462 };
+
+    if (id === 'system_default') {
+      if (systemProfileData) {
+        sourceLayers = JSON.parse(JSON.stringify(systemProfileData.layers || []));
+        sourceBg = JSON.parse(JSON.stringify(systemProfileData.background || { type: 'starfield', value: '' }));
+        sourceRes = JSON.parse(JSON.stringify(systemProfileData.resolution || { width: 1920, height: 462 }));
+      }
+    } else {
+      const source = profiles[id];
+      if (source) {
+        sourceLayers = JSON.parse(JSON.stringify(source.layers || []));
+        sourceBg = JSON.parse(JSON.stringify(source.background || { type: 'transparent', value: '' }));
+        sourceRes = JSON.parse(JSON.stringify(source.resolution || { width: 1920, height: 462 }));
+      }
+    }
+
+    const newId = 'profile_' + Date.now();
+    const cloned = {
+      id: newId,
+      name: newName.trim() || 'Cloned Profile',
+      resolution: sourceRes,
+      background: sourceBg,
+      layers: sourceLayers
+    };
+
+    setProfiles((prev) => {
+      const next = { ...prev, [newId]: cloned };
+      localStorage.setItem('nyan_studio_assembler_profiles', JSON.stringify(next));
+      return next;
+    });
+
+    setActiveProfileId(newId);
+    setLayers(sourceLayers);
+    setBackground(sourceBg);
+    setResolution(sourceRes);
+    localStorage.setItem('nyan_studio_active_profile_id', newId);
+    return newId;
   };
 
   const importIndividualProfile = (payload) => {
@@ -671,7 +765,6 @@ export const AppProvider = ({ children }) => {
           setBackground({ type: 'transparent', value: '' });
           setBindings({
             HEAD_OPEN: 'default',
-            HEAD_BLINK: 'default',
             POPTART: 'default',
             TAIL_UP: 'default',
             TAIL_MID: 'default',
@@ -744,15 +837,10 @@ export const AppProvider = ({ children }) => {
       const keys = Object.keys(customParts);
 
       if (slotLower.startsWith('head')) {
-        const blinkKey = keys.find(k => k.includes('head') && k.includes('blink'));
         const openKey = keys.find(k => k.includes('head') && k.includes('open'));
         const genericKey = keys.find(k => k.includes('head'));
 
-        if (slotLower === 'head_blink') {
-          return blinkKey || openKey || genericKey;
-        } else {
-          return openKey || blinkKey || genericKey;
-        }
+        return openKey || genericKey;
       }
 
       if (slotLower.startsWith('poptart')) {
@@ -795,7 +883,7 @@ export const AppProvider = ({ children }) => {
           // Use .matrix (new format) with fallback to .data (legacy)
           mapping[slot] = customParts[partKey].matrix || customParts[partKey].data;
         } else {
-          mapping[slot] = getSpriteMatrix(DEFAULT_SPRITES[slot]);
+          mapping[slot] = getSpriteMatrix(defaultSprites[slot]);
         }
       }
       // 2. Intelligent real-time paint projection
@@ -805,10 +893,8 @@ export const AppProvider = ({ children }) => {
 
         let matches = false;
         if (slotLower.startsWith('head') && keyLower.includes('head')) {
-          if (slotLower === 'head_blink') {
-            matches = keyLower.includes('blink') || (keyLower.includes('open') && bindings.HEAD_BLINK === 'default');
-          } else if (slotLower === 'head_open') {
-            matches = keyLower.includes('open') || (keyLower.includes('blink') && bindings.HEAD_OPEN === 'default');
+          if (slotLower === 'head_open') {
+            matches = keyLower.includes('open') || keyLower.includes('head');
           } else {
             matches = true;
           }
@@ -844,7 +930,7 @@ export const AppProvider = ({ children }) => {
           if (libMatchKey && customParts[libMatchKey]) {
             mapping[slot] = customParts[libMatchKey].matrix || customParts[libMatchKey].data;
           } else {
-            mapping[slot] = getSpriteMatrix(DEFAULT_SPRITES[slot]);
+            mapping[slot] = getSpriteMatrix(defaultSprites[slot]);
           }
         }
       }
@@ -854,11 +940,16 @@ export const AppProvider = ({ children }) => {
         if (libMatchKey && customParts[libMatchKey]) {
           mapping[slot] = customParts[libMatchKey].matrix || customParts[libMatchKey].data;
         } else {
-          mapping[slot] = getSpriteMatrix(DEFAULT_SPRITES[slot]);
+          mapping[slot] = getSpriteMatrix(defaultSprites[slot]);
         }
       }
     });
     return mapping;
+  };
+
+  const allProfiles = {
+    ...(systemProfileData ? { system_default: systemProfileData } : {}),
+    ...profiles
   };
 
   return (
@@ -889,7 +980,7 @@ export const AppProvider = ({ children }) => {
         exportProjectJson,
         importProjectJson,
         getActiveRenderPartsMapping,
-        profiles,
+        profiles: allProfiles,
         activeProfileId,
         resolution,
         setResolution,
@@ -897,6 +988,7 @@ export const AppProvider = ({ children }) => {
         loadProfile,
         saveProfile,
         deleteProfile,
+        cloneProfile,
         importIndividualProfile,
         closeActiveProfile,
         checkHasUnsavedChanges,
@@ -906,7 +998,8 @@ export const AppProvider = ({ children }) => {
         deletePackage,
         customPalettes,
         importCustomPalette,
-        deleteCustomPalette
+        deleteCustomPalette,
+        defaultSprites
       }}
     >
       {children}

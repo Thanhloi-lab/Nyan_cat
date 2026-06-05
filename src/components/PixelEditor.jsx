@@ -1,27 +1,39 @@
 import { useState, useContext, useEffect, useRef, useCallback, useMemo } from 'react';
 import { AppContext } from '../context/AppContext';
-import { PALETTES, DEFAULT_SPRITES } from '../utils/nyanRenderer';
 import { Trash2, Plus, Minus, RefreshCw, Copy, Save } from 'lucide-react';
 import PixelGridBoard from './PixelGridBoard';
 import ColorPaletteManager from './ColorPaletteManager';
+import { PALETTES, getCustomMergedPalette } from '../utils/nyanRenderer';
+
+const DEFAULT_EDITOR_COLORS = {
+  1: '#000000',
+  2: '#999999',
+  3: '#777777',
+  4: '#dd8855',
+  5: '#ff99cc',
+  6: '#ff3399',
+  7: '#ffffff',
+  8: '#ff9999'
+};
 
 export default function PixelEditor({ editingPartKey, onClose }) {
-  const { 
-    customParts, 
-    saveCustomPart, 
-    deleteCustomPart, 
-    getDefaultSpriteData, 
-    settings, 
+  const {
+    customParts,
+    saveCustomPart,
+    deleteCustomPart,
+    getDefaultSpriteData,
+    settings,
     liveEditingPartRef,
     setToastMessage,
     loadedPackages,
     t,
     customPalettes,
     importCustomPalette,
-    deleteCustomPalette
+    deleteCustomPalette,
+    defaultSprites
   } = useContext(AppContext);
 
-  const isReadOnly = !!(editingPartKey && DEFAULT_SPRITES[editingPartKey] && !customParts[editingPartKey]);
+  const isReadOnly = !!(editingPartKey && defaultSprites[editingPartKey] && !customParts[editingPartKey]);
 
   const [selectedPaletteName, setSelectedPaletteName] = useState('default');
 
@@ -55,14 +67,15 @@ export default function PixelEditor({ editingPartKey, onClose }) {
       liveEditingPartRef.current = { key, data: gridData, palette: activePalette };
     }
   }, [partName, gridData, selectedPaletteName, customPalettes, liveEditingPartRef]);
-  
+
   const [activeColor, setActiveColor] = useState(1); // Default to black outline
   const isDrawingRef = useRef(false);
-  const [presetTemplate, setPresetTemplate] = useState('HEAD_OPEN');
+  const [presetTemplate, setPresetTemplate] = useState(() => {
+    return Object.keys(defaultSprites || {})[0] || 'HEAD_OPEN';
+  });
 
   const lastLoadedKeyRef = useRef(Symbol('initial'));
 
-  // Apply a template to the editor grid
   const loadTemplate = useCallback((templateKey) => {
     const preset = getDefaultSpriteData(templateKey);
     setGridWidth(preset.width);
@@ -70,19 +83,18 @@ export default function PixelEditor({ editingPartKey, onClose }) {
     setGridData(preset.data);
     setPartName(`custom_${templateKey.toLowerCase()}`);
     setIsAnimationFrameOnly(false);
-  }, [getDefaultSpriteData]);
 
-  const [localColors, setLocalColors] = useState({
-    1: '#000000',
-    2: '#999999',
-    3: '#777777',
-    4: '#dd8855',
-    5: '#ff99cc',
-    6: '#ff3399',
-    7: '#ffffff',
-    8: '#ff9999'
-  });
-  const [localColorLabels, setLocalColorLabels] = useState({});
+    // Load template colors first, then fill missing gaps with DEFAULT_EDITOR_COLORS
+    const sprite = defaultSprites[templateKey];
+    const spriteColors = sprite && sprite.colors ? sprite.colors : {};
+    setLocalColors({
+      ...DEFAULT_EDITOR_COLORS,
+      ...spriteColors
+    });
+    setSelectedPaletteName('default');
+  }, [getDefaultSpriteData, defaultSprites]);
+
+  const [localColors, setLocalColors] = useState(DEFAULT_EDITOR_COLORS);
 
   useEffect(() => {
     // Only load if editingPartKey actually changed
@@ -104,31 +116,17 @@ export default function PixelEditor({ editingPartKey, onClose }) {
 
         if (part.colors || part.palette) {
           const colorData = part.colors || part.palette;
-          setLocalColors(JSON.parse(JSON.stringify(colorData)));
+          setLocalColors({
+            ...DEFAULT_EDITOR_COLORS,
+            ...JSON.parse(JSON.stringify(colorData))
+          });
           const paletteName = part.paletteName || `${part.name} Palette`;
           importCustomPalette(paletteName, colorData, part.colorLabels || {});
         } else {
-          const skin = PALETTES.skins[settings.skinStyle] || PALETTES.skins.classic;
-          const pop  = PALETTES.poptarts[settings.poptartStyle] || PALETTES.poptarts.strawberry;
-          setLocalColors({
-            1: '#000000',
-            2: settings.customSkinColor || skin.fill,
-            3: settings.customSkinShadow || skin.shadow,
-            4: settings.customCrustColor || pop.crust,
-            5: settings.customFrostingColor || pop.frosting,
-            6: settings.customSprinkleColor || pop.sprinkle,
-            7: '#ffffff',
-            8: '#ff9999'
-          });
-        }
-
-        if (part.colorLabels) {
-          setLocalColorLabels(JSON.parse(JSON.stringify(part.colorLabels)));
-        } else {
-          setLocalColorLabels({});
+          setLocalColors(DEFAULT_EDITOR_COLORS);
         }
         setSelectedPaletteName('default');
-      } else if (DEFAULT_SPRITES[editingPartKey]) {
+      } else if (defaultSprites[editingPartKey]) {
         // Load default template sprite data
         const preset = getDefaultSpriteData(editingPartKey);
         setGridWidth(preset.width);
@@ -139,103 +137,77 @@ export default function PixelEditor({ editingPartKey, onClose }) {
         setIsCreatingNewPackage(false);
         setIsAnimationFrameOnly(false);
 
-        const skin = PALETTES.skins[settings.skinStyle] || PALETTES.skins.classic;
-        const pop  = PALETTES.poptarts[settings.poptartStyle] || PALETTES.poptarts.strawberry;
+        const sprite = defaultSprites[editingPartKey];
+        const spriteColors = sprite.colors || {};
+
         setLocalColors({
-          1: '#000000',
-          2: settings.customSkinColor || skin.fill,
-          3: settings.customSkinShadow || skin.shadow,
-          4: settings.customCrustColor || pop.crust,
-          5: settings.customFrostingColor || pop.frosting,
-          6: settings.customSprinkleColor || pop.sprinkle,
-          7: '#ffffff',
-          8: '#ff9999'
+          ...DEFAULT_EDITOR_COLORS,
+          ...spriteColors
         });
-        setLocalColorLabels({});
         setSelectedPaletteName('default');
       }
     } else {
       // New part
-      loadTemplate('HEAD_OPEN');
+      const firstTemplateKey = Object.keys(defaultSprites || {})[0] || 'HEAD_OPEN';
+      loadTemplate(firstTemplateKey);
       setPackageName('My Custom');
       setIsCreatingNewPackage(false);
       setIsAnimationFrameOnly(false);
 
-      const skin = PALETTES.skins[settings.skinStyle] || PALETTES.skins.classic;
-      const pop  = PALETTES.poptarts[settings.poptartStyle] || PALETTES.poptarts.strawberry;
-      setLocalColors({
-        1: '#000000',
-        2: settings.customSkinColor || skin.fill,
-        3: settings.customSkinShadow || skin.shadow,
-        4: settings.customCrustColor || pop.crust,
-        5: settings.customFrostingColor || pop.frosting,
-        6: settings.customSprinkleColor || pop.sprinkle,
-        7: '#ffffff',
-        8: '#ff9999'
-      });
-      setLocalColorLabels({});
+      setLocalColors(DEFAULT_EDITOR_COLORS);
       setSelectedPaletteName('default');
     }
   }, [editingPartKey, customParts, settings, loadTemplate, getDefaultSpriteData, importCustomPalette]);
 
-  const skin = useMemo(() => PALETTES.skins[settings.skinStyle] || PALETTES.skins.classic, [settings.skinStyle]);
-  const pop  = useMemo(() => PALETTES.poptarts[settings.poptartStyle] || PALETTES.poptarts.strawberry, [settings.poptartStyle]);
-
   const currentTemplateColors = useMemo(() => {
     return selectedPaletteName !== 'default' && customPalettes[selectedPaletteName]
       ? (customPalettes[selectedPaletteName].colors || customPalettes[selectedPaletteName])
-      : {
-          1: '#000000',
-          2: settings.customSkinColor || skin.fill,
-          3: settings.customSkinShadow || skin.shadow,
-          4: settings.customCrustColor || pop.crust,
-          5: settings.customFrostingColor || pop.frosting,
-          6: settings.customSprinkleColor || pop.sprinkle,
-          7: '#ffffff',
-          8: '#ff9999'
-        };
-  }, [selectedPaletteName, customPalettes, settings, skin, pop]);
-
-  const currentTemplateLabels = useMemo(() => {
-    return selectedPaletteName !== 'default' && customPalettes[selectedPaletteName]
-      ? (customPalettes[selectedPaletteName].labels || {})
-      : {};
+      : DEFAULT_EDITOR_COLORS;
   }, [selectedPaletteName, customPalettes]);
 
-  const mergePalette = useCallback((colorsToMerge, labelsToMerge = {}) => {
+  const mergePalette = useCallback((colorsToMerge) => {
     setLocalColors((prevColors) => {
       const nextColors = { ...prevColors };
-      const nextLabels = { ...localColorLabels };
-      
+
       Object.keys(colorsToMerge).forEach((k) => {
         const hex = colorsToMerge[k];
-        const label = labelsToMerge[k] || '';
-        
+
         const existingIdx = Object.keys(nextColors).find(
           (idx) => nextColors[idx].toLowerCase() === hex.toLowerCase()
         );
-        
-        if (existingIdx) {
-          if (label && !nextLabels[existingIdx]) {
-            nextLabels[existingIdx] = label;
-          }
-        } else {
+
+        if (!existingIdx) {
           const nextIdx = Math.max(0, ...Object.keys(nextColors).map(Number)) + 1;
           nextColors[nextIdx] = hex;
-          if (label) {
-            nextLabels[nextIdx] = label;
-          }
         }
       });
-      setLocalColorLabels(nextLabels);
       return nextColors;
     });
-  }, [localColorLabels]);
+  }, []);
+
+  const baseColorMap = useMemo(() => {
+    const skin = PALETTES.skins[settings.skinStyle] || PALETTES.skins.classic;
+    const pop = PALETTES.poptarts[settings.poptartStyle] || PALETTES.poptarts.strawberry;
+    return {
+      1: '#000000',
+      2: settings.customSkinColor || skin.fill,
+      3: settings.customSkinShadow || skin.shadow,
+      4: settings.customCrustColor || pop.crust,
+      5: settings.customFrostingColor || pop.frosting,
+      6: settings.customSprinkleColor || pop.sprinkle,
+      7: '#ffffff',
+      8: '#ff9999'
+    };
+  }, [settings]);
+
+  const displayColors = useMemo(() => {
+    return getCustomMergedPalette(localColors, baseColorMap);
+  }, [localColors, baseColorMap]);
 
   const colorMap = useMemo(() => ({
-    0: 'transparent',
-    ...localColors
-  }), [localColors]);
+    0: t('pixelEditor.transparent'),
+    ...displayColors
+  }), [displayColors, t]);
 
   // Handle grid size adjustment (preserving existing pixels)
   const handleGridResize = (dimension, amount) => {
@@ -277,7 +249,7 @@ export default function PixelEditor({ editingPartKey, onClose }) {
       const color = activeColorRef.current;
       // Short-circuit to avoid re-renders if identical
       if (prevGrid[r][c] === color) return prevGrid;
-      
+
       const nextGrid = [...prevGrid];
       nextGrid[r] = [...nextGrid[r]];
       nextGrid[r][c] = color;
@@ -310,13 +282,13 @@ export default function PixelEditor({ editingPartKey, onClose }) {
   const handleSave = () => {
     if (isReadOnly) return;
     if (!partName.trim()) {
-      setToastMessage(t('pixelEditor.errors.missingName') || '⚠️ Vui lòng nhập tên bộ phận!');
+      setToastMessage(t('pixelEditor.errors.missingName'));
       return;
     }
 
     const finalPackage = isCreatingNewPackage ? newPackageName.trim() : packageName;
     if (isCreatingNewPackage && !finalPackage) {
-      setToastMessage(t('pixelEditor.errors.missingPackageName') || '⚠️ Vui lòng nhập tên package mới!');
+      setToastMessage(t('pixelEditor.errors.missingPackageName'));
       return;
     }
 
@@ -329,20 +301,20 @@ export default function PixelEditor({ editingPartKey, onClose }) {
       gridData,
       finalPackage || 'My Custom',
       activeColors,
-      localColorLabels,
+      null,
       isAnimationFrameOnly
     );
-    
-    setToastMessage(t('pixelEditor.toasts.savedToLibrary', { name: partName }) || `💾 Đã lưu "${partName}" vào thư viện linh kiện thành công!`);
+
+    setToastMessage(t('pixelEditor.toasts.savedToLibrary', { name: partName }));
   };
 
   // Delete part
   const handleDelete = () => {
     if (isReadOnly || !editingPartKey || !customParts[editingPartKey]) return;
     const part = customParts[editingPartKey];
-    if (window.confirm(t('pixelEditor.confirm.deletePart', { name: part.name }) || `Xóa bộ phận "${part.name}" khỏi thư viện?`)) {
+    if (window.confirm(t('pixelEditor.confirm.deletePart', { name: part.name }))) {
       deleteCustomPart(editingPartKey);
-      setToastMessage(t('pixelEditor.toasts.deleted', { name: part.name }) || `❌ Đã xóa bộ phận "${part.name}" khỏi thư viện.`);
+      setToastMessage(t('pixelEditor.toasts.deleted', { name: part.name }));
       if (onClose) onClose();
     }
   };
@@ -350,7 +322,7 @@ export default function PixelEditor({ editingPartKey, onClose }) {
   // Reset current grid to transparent
   const handleClear = () => {
     if (isReadOnly) return;
-    if (window.confirm(t('pixelEditor.confirm.clearGrid') || 'Xóa sạch lưới vẽ hiện tại?')) {
+    if (window.confirm(t('pixelEditor.confirm.clearGrid'))) {
       setGridData(Array(gridHeight).fill().map(() => Array(gridWidth).fill(0)));
     }
   };
@@ -365,7 +337,7 @@ export default function PixelEditor({ editingPartKey, onClose }) {
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(gridCode);
-    setToastMessage(t('pixelEditor.toasts.copiedCode') || '📋 Đã copy mã model object vào Clipboard!');
+    setToastMessage(t('pixelEditor.toasts.copiedCode'));
   };
 
   return (
@@ -375,19 +347,19 @@ export default function PixelEditor({ editingPartKey, onClose }) {
         <div className="editor-card-header">
           <div className="header-meta">
             <span className="card-tag">
-              {isReadOnly ? `🔒 ${t('pixelEditor.readOnlyTag') || 'MẪU MẶC ĐỊNH - CHỈ XEM'}` : t('pixelEditor.canvasTag') || 'CANVAS'}
+              {isReadOnly ? `🔒 ${t('pixelEditor.readOnlyTag')}` : t('pixelEditor.canvasTag')}
             </span>
             <h2>
-              {isReadOnly 
-                ? `${partName} (${t('pixelEditor.readOnlyLabel') || 'Chế độ chỉ xem'})` 
-                : (t('pixelEditor.canvasTitle', { w: gridWidth, h: gridHeight }) || `Pixel Workspace (${gridWidth} × ${gridHeight})`)
+              {isReadOnly
+                ? `${partName} (${t('pixelEditor.readOnlyLabel')})`
+                : (t('pixelEditor.canvasTitle', { w: gridWidth, h: gridHeight }))
               }
             </h2>
           </div>
           {!isReadOnly && (
             <div className="header-actions">
               <div className="preset-selector">
-                <span className="label-text">{t('pixelEditor.loadTemplate') || 'Load Template:'}</span>
+                <span className="label-text">{t('pixelEditor.loadTemplate')}</span>
                 <select
                   className="select-custom"
                   value={presetTemplate}
@@ -396,19 +368,15 @@ export default function PixelEditor({ editingPartKey, onClose }) {
                     loadTemplate(e.target.value);
                   }}
                 >
-                  <option value="HEAD_OPEN">Cat Head (Open)</option>
-                  <option value="HEAD_BLINK">Cat Head (Blink)</option>
-                  <option value="POPTART">Pop-Tart Toast Body</option>
-                  <option value="TAIL_UP">Tail (Upward)</option>
-                  <option value="TAIL_MID">Tail (Horizontal)</option>
-                  <option value="TAIL_DOWN">Tail (Downward)</option>
-                  <option value="LEG_DOWN">Leg (Straight)</option>
-                  <option value="LEG_FRONT">Leg (Kick Front)</option>
-                  <option value="LEG_BACK">Leg (Kick Back)</option>
+                  {Object.keys(defaultSprites || {}).map((key) => (
+                    <option key={key} value={key}>
+                      {t(`slots.${key}`) || key}
+                    </option>
+                  ))}
                 </select>
               </div>
               <button className="btn btn-secondary btn-small" onClick={handleClear}>
-                <RefreshCw size={14} /> {t('pixelEditor.btnClear') || 'Reset Clear'}
+                <RefreshCw size={14} /> {t('pixelEditor.btnClear')}
               </button>
             </div>
           )}
@@ -426,9 +394,9 @@ export default function PixelEditor({ editingPartKey, onClose }) {
         />
 
         <div className="drag-hint font-sans">
-          {isReadOnly 
-            ? `🔒 ${t('pixelEditor.readOnlyGridHint') || 'Sprite mặc định ở chế độ chỉ đọc. Sử dụng bảng live export code bên phải để copy matrix.'}`
-            : `💡 ${t('pixelEditor.dragHint') || 'Click chuột trái để tô màu. Nhấn giữ chuột trái và rê vẽ để tô hàng loạt nhanh chóng.'}`
+          {isReadOnly
+            ? `🔒 ${t('pixelEditor.readOnlyGridHint')}`
+            : `💡 ${t('pixelEditor.dragHint')}`
           }
         </div>
       </div>
@@ -446,20 +414,20 @@ export default function PixelEditor({ editingPartKey, onClose }) {
             boxShadow: '0 4px 15px rgba(0, 229, 255, 0.05)'
           }}>
             <h3 style={{ color: 'var(--color-primary-glow, #00e5ff)', display: 'flex', alignItems: 'center', gap: '8px', marginTop: 0, marginBottom: '10px', fontSize: '14px' }}>
-              <span>🔒</span> {t('pixelEditor.readOnlyTitle') || 'Sprite Mặc Định - Chỉ Xem & Copy Matrix'}
+              <span>🔒</span> {t('pixelEditor.readOnlyTitle')}
             </h3>
             <p style={{ fontSize: '12px', color: '#a0aab5', lineHeight: '1.6', margin: '0 0 10px 0' }}>
-              {t('pixelEditor.readOnlyNotice') || 'Đây là linh kiện hệ thống mặc định của Nyan Cat. Bạn không thể chỉnh sửa, lưu đè hay xóa linh kiện này.'}
+              {t('pixelEditor.readOnlyNotice')}
             </p>
             <p style={{ fontSize: '12px', color: 'var(--color-primary-glow, #00e5ff)', fontWeight: 'bold', margin: 0 }}>
-              {t('pixelEditor.readOnlyCopyTip') || '💡 Bạn có thể copy mã nguồn ma trận 2D ở dưới để sử dụng hoặc tạo biến thể riêng!'}
+              {t('pixelEditor.readOnlyCopyTip')}
             </p>
           </div>
         ) : (
           <div className="panel-section">
-            <h3>1. {t('pixelEditor.sectionSaveTitle') || 'Save Part Details'}</h3>
+            <h3>1. {t('pixelEditor.sectionSaveTitle')}</h3>
             <div className="input-group">
-              <label>{t('pixelEditor.partNameLabel') || 'Name (English Keys Recommended)'}</label>
+              <label>{t('pixelEditor.partNameLabel')}</label>
               <input
                 type="text"
                 className="input-text"
@@ -470,7 +438,7 @@ export default function PixelEditor({ editingPartKey, onClose }) {
             </div>
 
             <div className="input-group" style={{ marginTop: '12px' }}>
-              <label>{t('pixelEditor.packageLabel') || 'Gói linh kiện (Package)'}</label>
+              <label>{t('pixelEditor.packageLabel')}</label>
               <select
                 className="select-custom"
                 value={isCreatingNewPackage ? "__NEW__" : packageName}
@@ -487,19 +455,19 @@ export default function PixelEditor({ editingPartKey, onClose }) {
                 {uniquePackages.map((pkg) => (
                   <option key={pkg} value={pkg}>📦 {pkg}</option>
                 ))}
-                <option value="__NEW__">➕ {t('pixelEditor.newPackageOption') || 'Tạo Package Mới...'}</option>
+                <option value="__NEW__">➕ {t('pixelEditor.newPackageOption')}</option>
               </select>
             </div>
 
             {isCreatingNewPackage && (
               <div className="input-group animate-slide-down" style={{ marginTop: '8px' }}>
-                <label>{t('pixelEditor.newPackagePlaceholder') || 'Tên Package Mới'}</label>
+                <label>{t('pixelEditor.newPackagePlaceholder')}</label>
                 <input
                   type="text"
                   className="input-text"
                   value={newPackageName}
                   onChange={(e) => setNewPackageName(e.target.value)}
-                  placeholder={t('pixelEditor.newPackageInputPlaceholder') || 'Ví dụ: dog, robot, sword...'}
+                  placeholder={t('pixelEditor.newPackageInputPlaceholder')}
                 />
               </div>
             )}
@@ -514,7 +482,7 @@ export default function PixelEditor({ editingPartKey, onClose }) {
                 style={{ cursor: 'pointer', width: '16px', height: '16px' }}
               />
               <label htmlFor="isAnimationFrameOnly" style={{ fontSize: '11px', color: '#aaa', cursor: 'pointer', margin: 0, userSelect: 'none' }}>
-                {t('pixelEditor.isAnimationFrameOnlyLabel') || 'Linh kiện phụ cho animation (Không hiển thị ở bảng chính)'}
+                {t('pixelEditor.isAnimationFrameOnlyLabel')}
               </label>
             </div>
 
@@ -547,14 +515,14 @@ export default function PixelEditor({ editingPartKey, onClose }) {
 
             <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
               <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSave}>
-                <Save size={16} style={{ marginRight: 6 }} /> {t('pixelEditor.btnSave') || 'Save to My Library'}
+                <Save size={16} style={{ marginRight: 6 }} /> {t('pixelEditor.btnSave')}
               </button>
               {editingPartKey && customParts[editingPartKey] && (
-                <button 
-                  className="btn btn-secondary" 
-                  style={{ background: 'rgba(255, 0, 85, 0.1)', border: '1px solid rgba(255, 0, 85, 0.5)', color: '#ff3366', padding: '0 12px' }} 
+                <button
+                  className="btn btn-secondary"
+                  style={{ background: 'rgba(255, 0, 85, 0.1)', border: '1px solid rgba(255, 0, 85, 0.5)', color: '#ff3366', padding: '0 12px' }}
                   onClick={handleDelete}
-                  title={t('pixelEditor.btnDelete') || 'Xóa bộ phận này'}
+                  title={t('pixelEditor.btnDelete')}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -566,18 +534,18 @@ export default function PixelEditor({ editingPartKey, onClose }) {
         {/* Unified Color Palette & Brushes Manager */}
         {!isReadOnly && (
           <div className="panel-section">
-            <h3>2. {t('pixelEditor.sectionPaletteTitle') || 'Custom Color Palette & Brushes'}</h3>
+            <h3>2. {t('pixelEditor.sectionPaletteTitle')}</h3>
             <ColorPaletteManager
               localColors={localColors}
               setLocalColors={setLocalColors}
-              localColorLabels={localColorLabels}
-              setLocalColorLabels={setLocalColorLabels}
+              baseColorMap={baseColorMap}
+              displayColors={displayColors}
               activeColor={activeColor}
               setActiveColor={setActiveColor}
               selectedPaletteName={selectedPaletteName}
               setSelectedPaletteName={setSelectedPaletteName}
               currentTemplateColors={currentTemplateColors}
-              currentTemplateLabels={currentTemplateLabels}
+              currentTemplateLabels={{}}
               mergePalette={mergePalette}
             />
           </div>
@@ -586,9 +554,9 @@ export default function PixelEditor({ editingPartKey, onClose }) {
         {/* Live Matrix Exporter */}
         <div className="panel-section">
           <div className="section-header-compact">
-            <h3>4. {t('pixelEditor.sectionExportTitle') || 'Live Export Array Code'}</h3>
+            <h3>4. {t('pixelEditor.sectionExportTitle')}</h3>
             <button className="btn-icon-link" onClick={copyToClipboard} title="Copy code">
-              <Copy size={14} /> {t('pixelEditor.btnCopy') || 'Copy'}
+              <Copy size={14} /> {t('pixelEditor.btnCopy')}
             </button>
           </div>
           <textarea className="textarea-code" readOnly value={gridCode} />

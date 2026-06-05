@@ -1,47 +1,82 @@
 {
   "generator": "Nyan Cat Widescreen Pixel Art Studio",
-  "timestamp": "2026-06-02T15:00:00Z",
+  "timestamp": "2026-06-04T12:00:00Z",
   "customParts": {},
   "layers": [
     {
       "id": "layer_tail",
       "partName": "TAIL_MID",
-      "x": 620,
-      "y": 180,
+      "x": 630,
+      "y": 188,
       "zIndex": 1,
-      "visible": true
+      "visible": true,
+      "isAnimated": true,
+      "motionFrames": [
+        { "partName": "TAIL_UP", "dx": 0, "dy": 0 },
+        { "partName": "TAIL_MID", "dx": 0, "dy": 1 },
+        { "partName": "TAIL_DOWN", "dx": 0, "dy": 2 },
+        { "partName": "TAIL_MID", "dx": 0, "dy": 1 }
+      ]
     },
     {
       "id": "layer_leg1",
       "partName": "LEG_DOWN",
-      "x": 690,
+      "x": 686,
       "y": 270,
       "zIndex": 2,
-      "visible": true
+      "visible": true,
+      "isAnimated": true,
+      "motionFrames": [
+        { "partName": "LEG_DOWN", "dx": -1, "dy": 0 },
+        { "partName": "LEG_FRONT", "dx": 1, "dy": 0 },
+        { "partName": "LEG_BACK", "dx": -1, "dy": 0 },
+        { "partName": "LEG_DOWN", "dx": 0, "dy": 0 }
+      ]
     },
     {
       "id": "layer_leg2",
-      "partName": "LEG_DOWN",
-      "x": 720,
+      "partName": "LEG_FRONT",
+      "x": 710,
       "y": 270,
       "zIndex": 3,
-      "visible": true
+      "visible": true,
+      "isAnimated": true,
+      "motionFrames": [
+        { "partName": "LEG_FRONT", "dx": -1, "dy": 0 },
+        { "partName": "LEG_BACK", "dx": 1, "dy": 0 },
+        { "partName": "LEG_DOWN", "dx": -1, "dy": 0 },
+        { "partName": "LEG_FRONT", "dx": 0, "dy": 0 }
+      ]
     },
     {
       "id": "layer_leg3",
-      "partName": "LEG_DOWN",
-      "x": 775,
+      "partName": "LEG_FRONT",
+      "x": 766,
       "y": 270,
       "zIndex": 4,
-      "visible": true
+      "visible": true,
+      "isAnimated": true,
+      "motionFrames": [
+        { "partName": "LEG_FRONT", "dx": -1, "dy": 0 },
+        { "partName": "LEG_DOWN", "dx": 1, "dy": 0 },
+        { "partName": "LEG_FRONT", "dx": -1, "dy": 0 },
+        { "partName": "LEG_FRONT", "dx": 0, "dy": 0 }
+      ]
     },
     {
       "id": "layer_leg4",
       "partName": "LEG_DOWN",
-      "x": 805,
+      "x": 790,
       "y": 270,
       "zIndex": 5,
-      "visible": true
+      "visible": true,
+      "isAnimated": true,
+      "motionFrames": [
+        { "partName": "LEG_DOWN", "dx": -1, "dy": 0 },
+        { "partName": "LEG_FRONT", "dx": 1, "dy": 0 },
+        { "partName": "LEG_BACK", "dx": -1, "dy": 0 },
+        { "partName": "LEG_DOWN", "dx": 0, "dy": 0 }
+      ]
     },
     {
       "id": "layer_body",
@@ -49,7 +84,14 @@
       "x": 670,
       "y": 140,
       "zIndex": 6,
-      "visible": true
+      "visible": true,
+      "isAnimated": true,
+      "motionFrames": [
+        { "partName": "POPTART", "dx": 0, "dy": 0 },
+        { "partName": "POPTART", "dx": 0, "dy": 1 },
+        { "partName": "POPTART", "dx": 0, "dy": 0 },
+        { "partName": "POPTART", "dx": 0, "dy": -1 }
+      ]
     },
     {
       "id": "layer_head",
@@ -57,36 +99,50 @@
       "x": 780,
       "y": 140,
       "zIndex": 7,
-      "visible": true
+      "visible": true,
+      "isAnimated": true,
+      "motionFrames": [
+        { "partName": "HEAD_OPEN", "dx": -1, "dy": 0 },
+        { "partName": "HEAD_OPEN", "dx": 0, "dy": 1 },
+        { "partName": "HEAD_OPEN", "dx": 1, "dy": 0 },
+        { "partName": "HEAD_OPEN", "dx": 0, "dy": -1 }
+      ]
     }
   ],
   "background": {
-    "type": "color",
-    "value": "#070612"
+    "type": "starfield",
+    "value": ""
   },
   "bindings": {
     "HEAD_OPEN": "default",
-    "HEAD_BLINK": "default",
     "POPTART": "default",
     "TAIL_UP": "default",
     "TAIL_MID": "default",
     "TAIL_DOWN": "default",
     "LEG_DOWN": "default",
     "LEG_FRONT": "default",
-    "LEG_BACK": "default"
+    "LEG_BACK": "default",
+    "TRAIL": "default"
   },
   "settings": {
     "fps": 24,
     "scale": 8,
     "starDensity": 40,
     "skinStyle": "classic",
-    "poptartStyle": "custom",
-    "rainbowStyle": "neon",
+    "poptartStyle": "strawberry",
+    "rainbowStyle": "classic",
     "movementMode": "stationary",
     "headDx": 12,
     "headDy": 0,
     "customFrostingColor": "#FF99CC",
     "customCrustColor": "#1a1829",
-    "customSprinkleColor": "#ff007f"
+    "customSprinkleColor": "#ff007f",
+    "trail": {
+      "enabled": true,
+      "spacing": 6,
+      "waveType": "blocky",
+      "waveAmplitude": 1,
+      "animationDivisor": 4
+    }
   }
 }

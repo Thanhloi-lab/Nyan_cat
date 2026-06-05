@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useRef } from "react";
 import { AppContext } from "../context/AppContext";
-import { PALETTES, DEFAULT_SPRITES } from "../utils/nyanRenderer";
+import { PALETTES, isClassicSystemSpriteColors, getCustomMergedPalette } from "../utils/nyanRenderer";
 
 const MiniCanvasPreview = React.memo(({ grid, width, height, palette = null, colors = null, style = {}, partName = null }) => {
-  const { settings } = useContext(AppContext);
+  const { settings, defaultSprites } = useContext(AppContext);
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -29,8 +29,18 @@ const MiniCanvasPreview = React.memo(({ grid, width, height, palette = null, col
     };
     // Priority: colors (new format) > palette (legacy) > baseColorMap (global settings fallback)
     const partColors = colors || palette;
-    const isSystemSprite = partName && DEFAULT_SPRITES[partName] !== undefined;
-    const finalColorMap = (partColors && !isSystemSprite) ? { ...baseColorMap, ...partColors } : baseColorMap;
+    const isSystemSprite = partName && defaultSprites && defaultSprites[partName] !== undefined;
+    let finalColorMap;
+    if (partColors) {
+      if (isSystemSprite) {
+        const shouldTheme = isClassicSystemSpriteColors(partName, partColors);
+        finalColorMap = shouldTheme ? baseColorMap : getCustomMergedPalette(partColors, baseColorMap);
+      } else {
+        finalColorMap = getCustomMergedPalette(partColors, baseColorMap);
+      }
+    } else {
+      finalColorMap = baseColorMap;
+    }
 
     const cellW = canvas.width / width;
     const cellH = canvas.height / height;

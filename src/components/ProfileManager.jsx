@@ -9,6 +9,7 @@ const ProfileManager = React.memo(({ handleProfileSwitch }) => {
     customParts,
     createProfile,
     deleteProfile,
+    cloneProfile,
     importIndividualProfile,
     t,
     setToastMessage
@@ -503,12 +504,19 @@ const ProfileManager = React.memo(({ handleProfileSwitch }) => {
                 return (
                   <div key={id} className="profile-item">
                     <div className="profile-info">
-                      <span
-                        className="profile-name"
-                        style={{ fontWeight: "bold", color: "#fff" }}
-                      >
-                        {p.name}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span
+                          className="profile-name"
+                          style={{ fontWeight: "bold", color: "#fff" }}
+                        >
+                          {p.name}
+                        </span>
+                        {p.isSystem && (
+                          <span style={{ fontSize: '9px', padding: '1px 4px', background: 'rgba(255, 0, 127, 0.15)', color: '#ff007f', borderRadius: '3px', marginLeft: '6px', fontWeight: 'bold' }}>
+                            {t("modelAssembler.systemProfile.badge") || "HỆ THỐNG / CHỈ ĐỌC"}
+                          </span>
+                        )}
+                      </div>
                       <span className="profile-meta-text">
                         📐 {p.resolution?.width}x{p.resolution?.height} px | 🥞 {p.layers?.length || 0} Layers
                       </span>
@@ -534,50 +542,77 @@ const ProfileManager = React.memo(({ handleProfileSwitch }) => {
                         {t("modelAssembler.savedProfiles.btnLoad") || "Mở Không Gian"}
                       </button>
 
-                      <button
-                        className="btn btn-secondary btn-small"
-                        onClick={() => exportIndividualProfile(id)}
-                        style={{
-                          background: "rgba(255,255,255,0.04)",
-                          border: "1px solid rgba(255,255,255,0.15)",
-                          color: "var(--color-neon-cyan)",
-                          padding: "5px 10px",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                        title={t("modelAssembler.savedProfiles.btnExportTitle") || "Xuất hồ sơ JSON và nén linh kiện dùng kèm"}
-                      >
-                        <Download size={13} />
-                      </button>
+                      {p.isSystem ? (
+                        <button
+                          className="btn btn-secondary btn-small"
+                          onClick={() => {
+                            const name = prompt(t("modelAssembler.systemProfile.cloneNamePrompt") || "Nhập tên cho hồ sơ nhân bản:", `${p.name} (Copy)`);
+                            if (name) {
+                              cloneProfile(id, name);
+                              alert(t("modelAssembler.systemProfile.cloneSuccess") || "Đã nhân bản hồ sơ hệ thống thành công!");
+                            }
+                          }}
+                          style={{
+                            background: "rgba(0, 242, 254, 0.1)",
+                            border: "1px solid var(--color-neon-cyan)",
+                            color: "var(--color-neon-cyan)",
+                            padding: "5px 12px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          {t("modelAssembler.systemProfile.btnCloneAction") || "Nhân bản"}
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            className="btn btn-secondary btn-small"
+                            onClick={() => exportIndividualProfile(id)}
+                            style={{
+                              background: "rgba(255,255,255,0.04)",
+                              border: "1px solid rgba(255,255,255,0.15)",
+                              color: "var(--color-neon-cyan)",
+                              padding: "5px 10px",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                            title={t("modelAssembler.savedProfiles.btnExportTitle") || "Xuất hồ sơ JSON và nén linh kiện dùng kèm"}
+                          >
+                            <Download size={13} />
+                          </button>
 
-                      <button
-                        className="btn btn-secondary btn-small"
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              t("modelAssembler.confirm.deleteProfile", { name: p.name }) ||
-                              `Xóa hoàn toàn hồ sơ "${p.name}"? Thao tác này không thể hoàn tác.`
-                            )
-                          ) {
-                            deleteProfile(id);
-                          }
-                        }}
-                        style={{
-                          background: "rgba(255,255,255,0.02)",
-                          border: "1px solid rgba(255,0,0,0.3)",
-                          color: "#ff4444",
-                          padding: "5px 10px",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                        }}
-                      >
-                        {t("modelAssembler.savedProfiles.btnDelete") || "Xóa"}
-                      </button>
+                          <button
+                            className="btn btn-secondary btn-small"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  t("modelAssembler.confirm.deleteProfile", { name: p.name }) ||
+                                  `Xóa hoàn toàn hồ sơ "${p.name}"? Thao tác này không thể hoàn tác.`
+                                )
+                              ) {
+                                deleteProfile(id);
+                              }
+                            }}
+                            style={{
+                              background: "rgba(255,255,255,0.02)",
+                              border: "1px solid rgba(255,0,0,0.3)",
+                              color: "#ff4444",
+                              padding: "5px 10px",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "12px",
+                            }}
+                          >
+                            {t("modelAssembler.savedProfiles.btnDelete") || "Xóa"}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );

@@ -3,11 +3,11 @@ import { AppContext } from "../context/AppContext";
 import {
   NyanCatModel,
   SparkleStarfield,
-  RainbowTrail,
   PALETTES,
-  DEFAULT_SPRITES,
   getSpriteMatrix,
   getSpriteColors,
+  isClassicSystemSpriteColors,
+  getCustomMergedPalette,
 } from "../utils/nyanRenderer";
 import { Play, Pause } from "lucide-react";
 
@@ -20,6 +20,7 @@ export default function CanvasPreview() {
     getActiveRenderPartsMapping,
     liveEditingPartRef,
     bindings,
+    defaultSprites,
   } = useContext(AppContext);
 
   const canvasRef = useRef(null);
@@ -52,7 +53,6 @@ export default function CanvasPreview() {
 
     // Simulation entities
     const starfield = new SparkleStarfield(1920, 462, settings.starDensity);
-    const rainbowTrail = new RainbowTrail();
 
     // Derived Initial position for cat
     const initialY = Math.round((462 - 13 * settings.scale) / 2);
@@ -69,6 +69,9 @@ export default function CanvasPreview() {
       headDy: settings.headDy,
       customParts,
       bindings,
+      defaultSprites,
+      trailSettings: settings.trail,
+      fps: settings.fps,
     });
 
     renderStateRef.current.lastTime = performance.now();
@@ -109,6 +112,10 @@ export default function CanvasPreview() {
             ctx.fillStyle = "#0f0f1b";
             ctx.fillRect(0, 0, 1920, 462);
           }
+        } else if (background.type === "starfield") {
+          // Dark space blue/black for starfield backdrop
+          ctx.fillStyle = "#0f0f1b";
+          ctx.fillRect(0, 0, 1920, 462);
         } else {
           // Transparent / Checkerboard representation
           ctx.fillStyle = "#000000"; // Pure black for screen decoration defaults
@@ -124,6 +131,8 @@ export default function CanvasPreview() {
           nyanCat.scale = settings.scale;
           nyanCat.headDx = settings.headDx;
           nyanCat.headDy = settings.headDy;
+          nyanCat.trailSettings = settings.trail;
+          nyanCat.fps = settings.fps;
 
           // Carry custom color picker values if 'custom' is active
           if (settings.poptartStyle === "custom") {
@@ -169,25 +178,83 @@ export default function CanvasPreview() {
           // Render space stars (only in Nyan Cat modes, not static scene assembler)
           starfield.draw(ctx, 4);
 
-          // Render rainbow trails
-          const rainbowY = nyanCat.y + nyanCat.currentBob;
-          rainbowTrail.draw(
-            ctx,
-            nyanCat.x,
-            rainbowY,
-            Math.floor(state.secondsElapsed * settings.fps),
-            settings.scale,
-            settings.rainbowStyle,
-          );
-
-          // Draw the cat model
-          nyanCat.draw(ctx);
+          // Draw the cat model (which procedurally renders its trail behind itself)
+          nyanCat.draw(ctx, state.secondsElapsed);
         }
 
         // --- MODE B: LAYERS ASSEMBLER VIEWER ---
         else {
+          if (background.type === "starfield") {
+            if (state.isPlaying) {
+              starfield.maxStars = settings.starDensity;
+              starfield.update(settings.assemblerMovement === "crosser" ? 2 : 4);
+            }
+            starfield.draw(ctx, 4);
+          }
+
           // Render space dust effect backdrop
           ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+
+          // 1. Calculate boundaries of non-trail layers for Crosser
+          const nonTrailLayers = layers.filter((l) => {
+            const nameLower = (l.partName || "").toLowerCase();
+            const isTrail = l.isProceduralTrail !== undefined
+              ? l.isProceduralTrail
+              : (nameLower.includes("trail") || nameLower.includes("rainbow") || nameLower.includes("stripe"));
+            return !isTrail;
+          });
+
+          let minX = 9999;
+          let maxX = -9999;
+
+          nonTrailLayers.forEach((l) => {
+            let w = 0;
+            const custom = customParts[l.partName];
+            if (custom) {
+              w = custom.width;
+            } else if (defaultSprites[l.partName]) {
+              const sprite = defaultSprites[l.partName];
+              const grid = getSpriteMatrix(sprite);
+              w = grid && grid[0] ? grid[0].length : 0;
+            }
+            const left = l.x;
+            const right = l.x + w * settings.scale;
+            if (left < minX) minX = left;
+            if (right > maxX) maxX = right;
+          });
+
+          if (minX === 9999) minX = 400;
+          if (maxX === -9999) maxX = 800;
+
+          // 2. Compute dynamic shiftX and shiftY based on assembler movement settings
+          let shiftX = 0;
+          let shiftY = 0;
+          const movement = settings.assemblerMovement || 'static';
+
+          if (movement === 'crosser') {
+            const speed = 4.5;
+            const startX = -maxX;
+            const endX = 1920 - minX;
+            const cycleWidth = endX - startX;
+
+            if (state.isPlaying) {
+              const totalDist = state.secondsElapsed * (settings.fps || 24) * speed;
+              const offsetInCycle = totalDist % cycleWidth;
+              shiftX = startX + offsetInCycle;
+              
+              // 6 FPS bobbing offset
+              const bobIndex = Math.floor(state.secondsElapsed * 6) % 4;
+              const bobOffsets = [0, 1, 0, -1];
+              shiftY = bobOffsets[bobIndex] * settings.scale;
+            }
+          } else if (movement === 'hover') {
+            if (state.isPlaying) {
+              const bobIndex = Math.floor(state.secondsElapsed * 6) % 4;
+              const bobOffsets = [0, 1, 0, -1];
+              shiftY = bobOffsets[bobIndex] * settings.scale;
+            }
+          }
+
           // Render absolute layers onto stage in order of zIndex
           const sorted = [...layers].sort((a, b) => a.zIndex - b.zIndex);
           sorted.forEach((layer) => {
@@ -226,8 +293,8 @@ export default function CanvasPreview() {
                 partColors = custom.colors || custom.palette;
                 width = custom.width;
                 height = custom.height;
-              } else if (DEFAULT_SPRITES[partName]) {
-                const sprite = DEFAULT_SPRITES[partName];
+              } else if (defaultSprites[partName]) {
+                const sprite = defaultSprites[partName];
                 partGrid = getSpriteMatrix(sprite);
                 partColors = sprite && !Array.isArray(sprite) ? sprite.colors : null;
                 height = partGrid ? partGrid.length : 0;
@@ -256,29 +323,92 @@ export default function CanvasPreview() {
               8: "#ff9999",
             };
 
-            const isSystemSprite = DEFAULT_SPRITES[partName] !== undefined;
-            const colorMap = (partColors && !isSystemSprite)
-              ? { ...baseColorMap, ...partColors }
-              : baseColorMap;
+            const isSystemSprite = defaultSprites[partName] !== undefined;
+            let colorMap;
+            if (partColors) {
+              if (isSystemSprite) {
+                const shouldTheme = isClassicSystemSpriteColors(partName, partColors);
+                colorMap = shouldTheme ? baseColorMap : getCustomMergedPalette(partColors, baseColorMap);
+              } else {
+                colorMap = getCustomMergedPalette(partColors, baseColorMap);
+              }
+            } else {
+              colorMap = baseColorMap;
+            }
 
             const s = settings.scale;
 
-            // Render absolute pixels (factoring in frame translation dx/dy)
-            for (let r = 0; r < height; r++) {
-              const row = partGrid[r];
-              if (!row) continue;
-              for (let c = 0; c < width; c++) {
-                const val = row[c];
-                if (val === 0) continue;
-                const hexColor = colorMap[val];
-                if (!hexColor) continue;
-                ctx.fillStyle = hexColor;
-                ctx.fillRect(
-                  layer.x + dx * s + c * s,
-                  layer.y + dy * s + r * s,
-                  s + 5,
-                  s + 5,
-                );
+            // Render procedural trail or normal stamp layer
+            const nameLower = partName.toLowerCase();
+            const isTrail = layer.isProceduralTrail !== undefined
+              ? layer.isProceduralTrail
+              : (nameLower.includes("trail") || nameLower.includes("rainbow") || nameLower.includes("stripe"));
+
+            if (isTrail && settings.trail?.enabled !== false) {
+              const stampWidth = width;
+              const trailSettings = settings.trail || {};
+              const spacing = (trailSettings.spacing || stampWidth) * s;
+              const waveType = trailSettings.waveType || 'blocky';
+              const amp = (trailSettings.waveAmplitude !== undefined ? trailSettings.waveAmplitude : (waveType === 'blocky' ? 1 : 2)) * s;
+              const freq = trailSettings.waveFrequency || 0.025;
+              const speed = trailSettings.waveSpeed || 0.4;
+              const div = trailSettings.animationDivisor || 4;
+              const frameOffset = state.secondsElapsed * (settings.fps || 24);
+
+              // Position end of trail at the layer's current position (with shiftX and dx applied)
+              const endX = layer.x + shiftX + dx * s;
+              const centerY = layer.y + shiftY + dy * s + (height / 2) * s;
+
+              // Draw stamps loop backwards starting from x = 0
+              for (let tx = 0; tx < endX; tx += spacing) {
+                let waveY = 0;
+                if (waveType === 'blocky') {
+                  const segmentIndex = Math.floor(tx / spacing);
+                  const animationStep = Math.floor(frameOffset / div);
+                  const isUp = Math.abs((segmentIndex - animationStep) % 2) === 0;
+                  waveY = (isUp ? 0 : amp);
+                } else {
+                  waveY = Math.sin(tx * freq - frameOffset * speed) * amp;
+                }
+                const baseY = centerY - (height / 2) * s + waveY;
+
+                // Draw the stamp grid
+                for (let r = 0; r < height; r++) {
+                  const row = partGrid[r];
+                  if (!row) continue;
+                  for (let c = 0; c < width; c++) {
+                    const val = row[c];
+                    if (val === 0) continue;
+                    const hexColor = colorMap[val];
+                    if (!hexColor) continue;
+                    ctx.fillStyle = hexColor;
+                    ctx.fillRect(
+                      tx + c * s,
+                      baseY + r * s,
+                      s + 0.5,
+                      s + 0.5
+                    );
+                  }
+                }
+              }
+            } else {
+              // Render normal pixels (factoring in frame translation dx/dy and shiftX/shiftY offsets)
+              for (let r = 0; r < height; r++) {
+                const row = partGrid[r];
+                if (!row) continue;
+                for (let c = 0; c < width; c++) {
+                  const val = row[c];
+                  if (val === 0) continue;
+                  const hexColor = colorMap[val];
+                  if (!hexColor) continue;
+                  ctx.fillStyle = hexColor;
+                  ctx.fillRect(
+                    layer.x + shiftX + dx * s + c * s,
+                    layer.y + shiftY + dy * s + r * s,
+                    s + 0.5,
+                    s + 0.5,
+                  );
+                }
               }
             }
           });

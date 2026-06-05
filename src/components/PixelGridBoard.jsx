@@ -6,7 +6,9 @@ const PixelCell = React.memo(({ r, c, val, color, onMouseDown, onMouseEnter }) =
       className="pixel-cell"
       style={{
         backgroundColor: val === 0 ? 'transparent' : color,
-        boxShadow: val === 0 ? 'inset 0 0 0 1px rgba(255,255,255,0.06)' : 'none'
+        boxShadow: val === 0 
+          ? 'inset 0 0 0 1px rgba(255, 255, 255, 0.15)' 
+          : 'inset 0 0 0 1px rgba(0, 0, 0, 0.18)'
       }}
       onMouseDown={(e) => onMouseDown(e, r, c)}
       onMouseEnter={(e) => onMouseEnter(e, r, c)}

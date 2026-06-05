@@ -30,6 +30,10 @@ const vi = {
     movementMode: 'Movement Mode',
     activeProfile: 'Active Custom Profile',
     noProfilesHint: 'Không có profile nào. Hãy tạo mới ở trang Assembler Studio!',
+    assemblerMotionStyle: 'Kiểu chuyển động Assembler',
+    motionStatic: 'Đứng yên',
+    motionHover: 'Bay lượn',
+    motionCrosser: 'Chạy màn hình',
     chooseProfile: '-- Chọn profile --',
     pixelScale: 'Pixel Art Scale',
     fps: 'Running Speed (FPS)',
@@ -79,14 +83,14 @@ const vi = {
   },
   slots: {
     HEAD_OPEN: 'Cat Head (Eyes Open)',
-    HEAD_BLINK: 'Cat Head (Blinking)',
     POPTART: 'Pop-Tart Toast Body',
     TAIL_UP: 'Tail (Upward wave)',
     TAIL_MID: 'Tail (Horizontal wave)',
     TAIL_DOWN: 'Tail (Downward wave)',
     LEG_DOWN: 'Leg (Straight down)',
     LEG_FRONT: 'Leg (Kick front)',
-    LEG_BACK: 'Leg (Kick back)'
+    LEG_BACK: 'Leg (Kick back)',
+    TRAIL: 'Vệt đuôi (Lượn sóng)'
   },
   pixelEditor: {
     canvasTag: 'PIXEL ART EDITOR',
@@ -96,12 +100,14 @@ const vi = {
       saveFailed: 'Lỗi khi lưu: {error}',
       invalidPalette: '⚠️ File JSON không hợp lệ! Phải chứa các key 1-8 trỏ tới mã màu HEX.',
       paletteParseError: '❌ Lỗi khi đọc file JSON gói màu!',
-      missingPaletteName: '⚠️ Vui lòng nhập tên gói màu!'
+      missingPaletteName: '⚠️ Vui lòng nhập tên gói màu!',
+      missingPackageName: '⚠️ Vui lòng nhập tên package mới!'
     },
     confirm: {
       deletePart: 'Bạn có chắc muốn xóa linh kiện "{name}" không?',
       clearGrid: 'Bạn có chắc muốn xóa toàn bộ khung vẽ hiện tại không?',
-      deletePalette: 'Bạn có chắc muốn gỡ gói màu "{name}" khỏi danh sách?'
+      deletePalette: 'Bạn có chắc muốn gỡ gói màu "{name}" khỏi danh sách?',
+      applyPalette: 'Áp dụng toàn bộ gói màu này làm bảng cọ vẽ hiện tại?'
     },
     toasts: {
       savedAndBound: '💾 Đã lưu "{name}" và gán vào chuyển động thành công!',
@@ -113,8 +119,11 @@ const vi = {
       paletteDeleted: '🗑️ Đã gỡ gói màu "{name}".',
       paletteSaved: '🎨 Đã lưu gói màu "{name}" vào thư viện!',
       colorSelected: '🎨 Đã chọn cọ màu #{index}',
-      colorAdded: '🎨 Đã thêm màu mới vào cọ vẽ #{index}!'
+      colorAdded: '🎨 Đã thêm màu mới vào cọ vẽ #{index}!',
+      colorDuplicated: '⚠️ Màu {base} đã có ở cọ vẽ #{duplicate}!',
+      paletteApplied: '🎨 Đã áp dụng gói màu vào cọ vẽ.',
     },
+    tooltipApplyPalette: 'Áp dụng toàn bộ gói màu làm cọ vẽ',
     colors: {
       0: 'Tẩy (Không màu)',
       1: 'Viền (Đen)',
@@ -151,7 +160,6 @@ const vi = {
       headGroup: '🐱 ĐẦU MÈO (HEAD)',
       headAll: '🌟 Tất cả trạng thái Đầu (Mở & Nhắm)',
       headOpen: '👁️ Mắt Mở (HEAD_OPEN)',
-      headBlink: '😑 Mắt Nhắm (HEAD_BLINK)',
       bodyGroup: '🥞 THÂN BÁNH (BODY)',
       poptart: '🍪 Thân bánh Pop-Tart (POPTART)',
       tailGroup: '🐕 ĐUÔI MÈO (TAIL)',
@@ -182,8 +190,8 @@ const vi = {
       body: 'Linh kiện này sẽ tự động thay thế bộ phận mặc định tương ứng của chú mèo Nyan Cat ở vị trí {slot}.',
       note: '💡 Chú mèo Nyan Cat trên Dashboard sẽ tự động co duỗi và chuyển động linh kiện mới này theo đúng quỹ đạo nhún nhảy mặc định!'
     },
-    btnSave: 'Save to My Library',
-    btnDelete: 'Delete Part',
+    btnSave: 'Lưu',
+    btnDelete: 'Xóa bộ phận này',
     isAnimationFrameOnlyLabel: 'Linh kiện phụ cho hoạt ảnh (Ẩn khỏi bảng lắp ráp chính)',
     sectionPaletteTitle: 'Bảng Màu Tùy Biến',
     defaultPalette: 'Màu Nyan Mặc Định (Chuyển Động)',
@@ -199,7 +207,23 @@ const vi = {
     brushHint: '💡 Nhấp vào ô màu của cọ vẽ bất kỳ để sửa màu tùy chọn!',
     tooltipColorPicker: 'Nhấp vào để chọn màu tùy ý',
     sectionExportTitle: 'Mã Ma Trận 2D',
-    btnCopy: 'Copy'
+    btnCopy: 'Copy',
+    tooltipDeleteBrush: 'Xóa cọ vẽ màu này',
+    savePaletteTitle: 'Lưu cọ vẽ thành gói màu riêng:',
+    transparent: 'Trong suốt',
+    readOnlyTag: 'Chỉ xem (Không thể chỉnh sửa)',
+    readOnlyLabel: 'Chế độ chỉ xem',
+    btnClear: 'Xóa',
+    readOnlyGridHint: 'Sprite mặc định ở chế độ chỉ đọc. Sử dụng bảng live export code bên phải để copy matrix.',
+    dragHint: 'Click chuột trái để tô màu. Nhấn giữ chuột trái và rê vẽ để tô hàng loạt nhanh chóng.',
+    readOnlyTitle: 'Sprite Mặc Định - Chỉ Xem & Copy Matrix',
+    readOnlyNotice: 'Đây là linh kiện hệ thống mặc định của Nyan Cat. Bạn không thể chỉnh sửa, lưu đè hay xóa linh kiện này.',
+    readOnlyCopyTip: '💡 Bạn có thể copy mã nguồn ma trận 2D ở dưới để sử dụng hoặc tạo biến thể riêng!',
+    sectionSaveTitle: 'Lưu chi tiết bộ phận',
+    partNameLabel: 'Tên (Nên dùng Tiếng Anh)',
+    packageLabel: 'Gói linh kiện (Package)',
+    newPackageOption: 'Tạo Package Mới...',
+    newPackageInputPlaceholder: 'Ví dụ: dog, robot, sword...'
   },
   exportPanel: {
     importSuccess: 'Nhập project thành công!',
@@ -320,7 +344,19 @@ const vi = {
       btnAddFrame: '➕ Thêm Frame',
       btnDeleteLastFrame: '➖ Xóa Frame Cuối'
     },
+    trail: {
+      heading: '🥞 Cấu Hình Hiệu Ứng Sóng Vệt Đuôi (Procedural Trail)',
+      enabled: 'Kích hoạt vệt đuôi lượn sóng',
+      spacing: 'Khoảng cách các đốt sóng (Spacing):',
+      amplitude: 'Biên độ sóng dao động (Amplitude):',
+      speedDivisor: 'Tốc độ sóng (Divisor - Chia nhỏ để mượt):',
+      waveType: 'Kiểu dáng sóng (Wave Type):',
+      typeBlocky: 'Sóng gãy khúc (Blocky)',
+      typeSine: 'Sóng mềm mại (Sine)',
+      hint: 'Hiệu ứng vệt đuôi được tự động tính toán trên Mô hình Động khi có vệt đuôi (RAINBOW_STRIPES).'
+    },
     layers: {
+      stackTitle: 'Cấu Trúc Các Tầng Layer (Stack)',
       emptyHint:
         'Chưa có linh kiện nào trên Canvas. Click chọn linh kiện ở trên để đưa vào Canvas!',
       btnMoveUpTitle: 'Đẩy lên trước (Tăng z-index)',
@@ -328,7 +364,16 @@ const vi = {
       btnHideTitle: 'Ẩn layer',
       btnShowTitle: 'Hiện layer',
       btnDuplicateTitle: 'Nhân bản layer (Duplicate)',
-      btnDeleteTitle: 'Xóa layer'
+      btnDeleteTitle: 'Xóa layer',
+      isProceduralTrail: 'Sử dụng làm Vệt đuôi chạy sóng (Procedural Trail)'
+    },
+    systemProfile: {
+      readOnlyWarning: '⚠️ Bạn đang xem Hồ sơ Hệ thống (Chỉ đọc). Hãy Nhân bản hồ sơ này để chỉnh sửa.',
+      btnClone: '➕ Nhân bản hồ sơ để sửa (Clone)',
+      cloneNamePrompt: 'Nhập tên cho hồ sơ nhân bản:',
+      cloneSuccess: 'Đã nhân bản hồ sơ hệ thống thành công!',
+      badge: 'HỆ THỐNG / CHỈ ĐỌC',
+      btnCloneAction: 'Nhân bản'
     },
     unsavedModal: {
       title: '⚠️ CẢNH BÁO THAY ĐỔI CHƯA LƯU',
@@ -363,7 +408,10 @@ const vi = {
       noCustom: 'Chưa có package tự tạo nào',
       confirmDelete: 'Xóa vĩnh viễn package "{name}" và tất cả linh kiện bên trong?',
       colorsTitle: 'Quản Lý Gói Màu (Palettes)',
-      noPalettes: 'Chưa có gói màu tùy biến nào'
+      noPalettes: 'Chưa có gói màu tùy biến nào',
+      import: 'Nạp Package',
+      importSuccess: 'Đã nạp thành công package "{name}" ({count} linh kiện)!',
+      importError: 'Lỗi khi nạp package: {error}'
     },
     search: {
       noResults: 'Không tìm thấy linh kiện phù hợp.',

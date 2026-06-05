@@ -20,10 +20,10 @@
 export const PALETTES = {
   skins: {
     classic: { name: 'Classic Grey', fill: '#999999', shadow: '#666666' },
-    tabby:   { name: 'Orange Tabby', fill: '#ff9933', shadow: '#cc6600' },
-    siamese: { name: 'Siamese',      fill: '#e6d8ad', shadow: '#8b5a2b' },
-    void:    { name: 'Void Black',    fill: '#2a2a2a', shadow: '#111111' },
-    albino:  { name: 'Albino White',  fill: '#fcfcfc', shadow: '#cccccc' }
+    tabby: { name: 'Orange Tabby', fill: '#ff9933', shadow: '#cc6600' },
+    siamese: { name: 'Siamese', fill: '#e6d8ad', shadow: '#8b5a2b' },
+    void: { name: 'Void Black', fill: '#2a2a2a', shadow: '#111111' },
+    albino: { name: 'Albino White', fill: '#fcfcfc', shadow: '#cccccc' }
   },
   poptarts: {
     strawberry: {
@@ -100,24 +100,24 @@ export const DEFAULT_SPRITES = {
       "6": "#FF3399"
     },
     matrix: [
-      [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-      [0,1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,1,0],
-      [1,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,4,1],
-      [1,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,1],
-      [1,4,5,5,6,5,5,5,6,5,5,5,5,6,5,5,5,5,5,5,5,4,1],
-      [1,4,5,5,5,5,5,5,5,5,5,6,5,5,5,5,6,5,5,5,5,4,1],
-      [1,4,5,6,5,5,6,5,5,5,5,5,5,5,6,5,5,5,5,5,5,4,1],
-      [1,4,5,5,5,5,5,5,5,6,5,5,5,5,5,5,5,6,5,5,5,4,1],
-      [1,4,5,5,5,6,5,5,5,5,5,5,6,5,5,6,5,5,5,5,5,4,1],
-      [1,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,5,5,4,1],
-      [1,4,5,5,5,6,5,5,5,6,5,5,5,5,5,5,5,5,5,5,5,4,1],
-      [1,4,5,5,5,5,5,5,5,5,5,5,5,6,5,5,5,5,5,5,5,4,1],
-      [1,4,5,5,5,5,5,5,6,5,5,5,5,5,5,5,5,5,5,5,5,4,1],
-      [1,4,5,5,5,6,5,5,5,5,5,5,5,5,5,5,6,5,5,5,5,4,1],
-      [1,4,4,5,5,5,5,5,6,5,5,5,6,5,5,5,5,5,6,5,4,4,1],
-      [1,4,4,4,5,5,5,5,5,5,5,5,5,5,6,5,5,5,5,4,4,4,1],
-      [0,1,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,0,1],
-      [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0]
+      [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+      [0, 1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1, 0],
+      [1, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 1],
+      [1, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 1],
+      [1, 4, 5, 5, 6, 5, 5, 5, 6, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 4, 1],
+      [1, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 6, 5, 5, 5, 5, 4, 1],
+      [1, 4, 5, 6, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 4, 1],
+      [1, 4, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 4, 1],
+      [1, 4, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 6, 5, 5, 6, 5, 5, 5, 5, 5, 4, 1],
+      [1, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 4, 1],
+      [1, 4, 5, 5, 5, 6, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 1],
+      [1, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 4, 1],
+      [1, 4, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 1],
+      [1, 4, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 4, 1],
+      [1, 4, 4, 5, 5, 5, 5, 5, 6, 5, 5, 5, 6, 5, 5, 5, 5, 5, 6, 5, 4, 4, 1],
+      [1, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 4, 4, 4, 1],
+      [0, 1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 1],
+      [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]
     ]
   },
   HEAD_OPEN: {
@@ -128,86 +128,87 @@ export const DEFAULT_SPRITES = {
       "8": "#ff9999"
     },
     matrix: [
-      [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
-      [0,1,2,2,1,0,0,0,0,0,0,1,2,2,1,0],
-      [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],
-      [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-      [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-      [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-      [1,2,2,2,7,1,2,2,2,2,2,7,1,2,2,1],
-      [1,2,2,2,1,1,2,2,2,1,2,1,1,2,2,1],
-      [1,2,8,8,2,2,2,2,2,2,2,2,2,8,8,1],
-      [1,2,8,8,2,1,2,2,1,2,2,1,2,8,8,1],
-      [0,1,2,2,2,1,1,1,1,1,1,1,2,2,1,0],
-      [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],
-      [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0]
-    ]
-  },
-  HEAD_BLINK: {
-    colors: {
-      "1": "#000000",
-      "2": "#999999",
-      "7": "#ffffff",
-      "8": "#ff9999"
-    },
-    matrix: [
-      [0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0],
-      [0,1,2,2,1,0,0,0,0,0,0,1,2,2,1,0],
-      [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],
-      [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-      [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
-      [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-      [1,2,2,2,7,1,2,2,2,2,2,7,1,2,2,1],
-      [1,2,2,2,1,1,2,2,2,1,2,1,1,2,2,1],
-      [1,2,8,8,2,2,2,2,2,2,2,2,2,8,8,1],
-      [1,2,8,8,2,1,2,2,1,2,2,1,2,8,8,1],
-      [0,1,2,2,2,1,1,1,1,1,1,1,2,2,1,0],
-      [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],
-      [0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0]
+      [0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0],
+      [0, 1, 2, 2, 1, 0, 0, 0, 0, 0, 0, 1, 2, 2, 1, 0],
+      [0, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 0],
+      [0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
+      [0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
+      [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1],
+      [1, 2, 2, 2, 7, 1, 2, 2, 2, 2, 2, 7, 1, 2, 2, 1],
+      [1, 2, 2, 2, 1, 1, 2, 2, 2, 1, 2, 1, 1, 2, 2, 1],
+      [1, 2, 8, 8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 8, 8, 1],
+      [1, 2, 8, 8, 2, 1, 2, 2, 1, 2, 2, 1, 2, 8, 8, 1],
+      [0, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 0],
+      [0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0],
+      [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0]
     ]
   },
   LEG_DOWN: {
     colors: { "1": "#000000", "2": "#999999" },
-    matrix: [[1,1,1],[1,2,1],[1,2,1]]
+    matrix: [[1, 1, 1], [1, 2, 1], [1, 2, 1]]
   },
   LEG_FRONT: {
     colors: { "1": "#000000", "2": "#999999" },
-    matrix: [[1,1,1],[1,2,1],[0,1,1]]
+    matrix: [[1, 1, 1], [1, 2, 1], [0, 1, 1]]
   },
   LEG_BACK: {
     colors: { "1": "#000000", "2": "#999999" },
-    matrix: [[1,1,1],[1,2,1],[1,1,0]]
+    matrix: [[1, 1, 1], [1, 2, 1], [1, 1, 0]]
   },
   TAIL_UP: {
     colors: { "1": "#000000", "2": "#999999" },
     matrix: [
-      [1,1,1,1,0,0],
-      [1,2,2,1,1,0],
-      [1,1,2,2,1,1],
-      [0,1,1,2,2,1],
-      [0,0,1,1,2,2],
-      [0,0,0,1,1,1],
-      [0,0,0,0,0,1]
+      [1, 1, 1, 1, 0, 0],
+      [1, 2, 2, 1, 1, 0],
+      [1, 1, 2, 2, 1, 1],
+      [0, 1, 1, 2, 2, 1],
+      [0, 0, 1, 1, 2, 2],
+      [0, 0, 0, 1, 1, 1],
+      [0, 0, 0, 0, 0, 1]
     ]
   },
   TAIL_MID: {
     colors: { "1": "#000000", "2": "#999999" },
     matrix: [
-      [1,1,1,1,1,0,0],
-      [1,2,2,2,1,1,1],
-      [1,1,1,2,2,2,1],
-      [0,0,1,1,1,1,2],
-      [0,0,0,0,0,1,1]
+      [1, 1, 1, 1, 1, 0, 0],
+      [1, 2, 2, 2, 1, 1, 1],
+      [1, 1, 1, 2, 2, 2, 1],
+      [0, 0, 1, 1, 1, 1, 2],
+      [0, 0, 0, 0, 0, 1, 1]
     ]
   },
   TAIL_DOWN: {
     colors: { "1": "#000000", "2": "#999999" },
     matrix: [
-      [0,0,0,0,0,1],
-      [0,1,1,1,1,1],
-      [1,1,2,2,2,2],
-      [1,2,2,2,1,1],
-      [0,1,1,1,1,0]
+      [0, 0, 0, 0, 0, 1],
+      [0, 1, 1, 1, 1, 1],
+      [1, 1, 2, 2, 2, 2],
+      [1, 2, 2, 2, 1, 1],
+      [0, 1, 1, 1, 1, 0]
+    ]
+  },
+  RAINBOW_STRIPES: {
+    colors: {
+      "1": "#ff0000",
+      "2": "#ff9900",
+      "3": "#ffff00",
+      "4": "#33cc33",
+      "5": "#0099ff",
+      "6": "#6633ff"
+    },
+    matrix: [
+      [1, 1, 1, 1, 1, 1],
+      [1, 1, 1, 1, 1, 1],
+      [2, 2, 2, 2, 2, 2],
+      [2, 2, 2, 2, 2, 2],
+      [3, 3, 3, 3, 3, 3],
+      [3, 3, 3, 3, 3, 3],
+      [4, 4, 4, 4, 4, 4],
+      [4, 4, 4, 4, 4, 4],
+      [5, 5, 5, 5, 5, 5],
+      [5, 5, 5, 5, 5, 5],
+      [6, 6, 6, 6, 6, 6],
+      [6, 6, 6, 6, 6, 6]
     ]
   }
 };
@@ -224,6 +225,68 @@ export function getSpriteColors(sprite) {
   if (!sprite) return { ...DEFAULT_COLORS };
   if (Array.isArray(sprite)) return { ...DEFAULT_COLORS }; // legacy fallback
   return { ...DEFAULT_COLORS, ...(sprite.colors || {}) };
+}
+
+// Helper to check if system sprite should be dynamically themed based on classic defaults
+export function isClassicSystemSpriteColors(partName, colors) {
+  if (!colors) return true;
+  const name = partName.toUpperCase();
+  if (name.startsWith('HEAD')) {
+    const c2 = colors[2] || colors['2'];
+    if (c2 && c2.toLowerCase() !== '#999999' && c2.toLowerCase() !== '#999') {
+      return false;
+    }
+  }
+  if (name.startsWith('POPTART') || name.startsWith('BODY')) {
+    const c5 = colors[5] || colors['5'];
+    if (c5 && c5.toLowerCase() !== '#ff99cc' && c5.toLowerCase() !== '#ff99cc') {
+      return false;
+    }
+  }
+  if (name.startsWith('LEG') || name.startsWith('TAIL')) {
+    const c2 = colors[2] || colors['2'];
+    if (c2 && c2.toLowerCase() !== '#999999' && c2.toLowerCase() !== '#999') {
+      return false;
+    }
+  }
+  if (name.startsWith('RAINBOW') || name.startsWith('TRAIL')) {
+    return false;
+  }
+  return true;
+}
+
+// Merge custom part colors with settings overrides, letting settings take priority
+// ONLY when the custom part uses standard classic fallback hex colors.
+export function getCustomMergedPalette(partColors, baseColorMap) {
+  if (!partColors) return { ...baseColorMap };
+  const colorsObj = partColors.colors ? partColors.colors : partColors;
+  const merged = { ...baseColorMap };
+  
+  const classicDefaults = {
+    "2": ["#999999", "#999"],
+    "3": ["#666666", "#666", "#777777", "#777"],
+    "4": ["#ffcc99", "#fca", "#dd8855", "#d85"],
+    "5": ["#ff99cc", "#f9c"],
+    "6": ["#ff3399", "#f39"],
+    "8": ["#ff9999", "#f99"]
+  };
+
+  Object.keys(colorsObj).forEach((key) => {
+    const val = colorsObj[key];
+    if (val === undefined || val === null) return;
+    
+    const defaultsForIndex = classicDefaults[key];
+    if (defaultsForIndex) {
+      const isClassicDefault = defaultsForIndex.includes(val.toLowerCase());
+      if (!isClassicDefault) {
+        merged[key] = val;
+      }
+    } else {
+      merged[key] = val;
+    }
+  });
+
+  return merged;
 }
 
 // Positioning configs for drawing
@@ -263,7 +326,7 @@ export class NyanCatModel {
     // Customization
     this.skinStyle = options.skinStyle || 'classic';
     this.poptartStyle = options.poptartStyle || 'strawberry';
-    
+
     // Custom color hexes (for palette editor integration)
     this.customSkinColor = null;
     this.customSkinShadow = null;
@@ -273,18 +336,25 @@ export class NyanCatModel {
 
     // Active animation frame
     this.currentFrame = 0;
-    this.blinkTimer = 0;
-    this.isBlinking = false;
     this.currentBob = 0;
 
     // Dimensions
     this.width = SPRITE_W * this.scale;
     this.height = SPRITE_H * this.scale;
-    
+
     // Custom parts mapping object (holds matrix arrays for rendering)
     this.customPartsMapping = options.customPartsMapping || {};
     this.customParts = options.customParts || {};
     this.bindings = options.bindings || {};
+    this.defaultSprites = options.defaultSprites || DEFAULT_SPRITES;
+    this.trailSettings = options.trailSettings || {
+      enabled: true,
+      spacing: 3,
+      waveAmplitude: 2,
+      waveFrequency: 0.025,
+      waveSpeed: 0.4
+    };
+    this.fps = options.fps || 24;
     this.liveEditingPalette = null;
     this.headDx = options.headDx !== undefined ? options.headDx : 12;
     this.headDy = options.headDy !== undefined ? options.headDy : 0;
@@ -293,34 +363,6 @@ export class NyanCatModel {
   // Get color map for a slot: colors embedded in the custom/default sprite take priority.
   // liveEditingPalette overrides when actively editing in PixelEditor.
   getColorsForSlot(slotKey, fallbackSprite) {
-    // 1. Live editing palette override
-    if (this.liveEditingPalette && this.liveEditingPalette.palette) {
-      const bindingKey = this.bindings ? this.bindings[slotKey] : null;
-      if (bindingKey === this.liveEditingPalette.key || slotKey === this.liveEditingPalette.key) {
-        const skin = PALETTES.skins[this.skinStyle] || PALETTES.skins.classic;
-        const pop = PALETTES.poptarts[this.poptartStyle] || PALETTES.poptarts.strawberry;
-        const baseColorMap = {
-          1: '#000000',
-          2: this.customSkinColor || skin.fill,
-          3: this.customSkinShadow || skin.shadow,
-          4: this.customCrustColor || pop.crust,
-          5: this.customFrostingColor || pop.frosting,
-          6: this.customSprinkleColor || pop.sprinkle,
-          7: '#ffffff',
-          8: '#ff9999'
-        };
-        const spriteColors = getSpriteColors(fallbackSprite);
-        const mergedColors = { ...baseColorMap, ...spriteColors };
-        return { ...mergedColors, ...this.liveEditingPalette.palette };
-      }
-    }
-    // 2. Custom part colors
-    const partKey = this.bindings ? this.bindings[slotKey] : null;
-    if (partKey && partKey !== 'default' && this.customParts && this.customParts[partKey]) {
-      const customPart = this.customParts[partKey];
-      return getSpriteColors(customPart);
-    }
-    // 3. Embedded colors in the sprite object itself, respect settings overrides
     const skin = PALETTES.skins[this.skinStyle] || PALETTES.skins.classic;
     const pop = PALETTES.poptarts[this.poptartStyle] || PALETTES.poptarts.strawberry;
     const baseColorMap = {
@@ -333,25 +375,32 @@ export class NyanCatModel {
       7: '#ffffff',
       8: '#ff9999'
     };
-    return baseColorMap;
+
+    // 1. Live editing palette override
+    if (this.liveEditingPalette && this.liveEditingPalette.palette) {
+      const bindingKey = this.bindings ? this.bindings[slotKey] : null;
+      if (bindingKey === this.liveEditingPalette.key || slotKey === this.liveEditingPalette.key) {
+        const spriteColors = getSpriteColors(fallbackSprite);
+        const mergedColors = { ...baseColorMap, ...spriteColors };
+        return { ...mergedColors, ...this.liveEditingPalette.palette };
+      }
+    }
+    // 2. Custom part colors
+    const partKey = this.bindings ? this.bindings[slotKey] : null;
+    if (partKey && partKey !== 'default' && this.customParts && this.customParts[partKey]) {
+      const customPart = this.customParts[partKey];
+      const partColors = getSpriteColors(customPart);
+      return getCustomMergedPalette(partColors, baseColorMap);
+    }
+    // 3. Embedded colors in the sprite object itself, respect settings overrides
+    const spriteColors = getSpriteColors(fallbackSprite);
+    const shouldTheme = isClassicSystemSpriteColors(slotKey, spriteColors);
+    return shouldTheme ? baseColorMap : { ...baseColorMap, ...spriteColors };
   }
 
   update() {
     this.currentFrame = (this.currentFrame + 1) % 4;
     this.currentBob = BOB_OFFSETS[this.currentFrame] * this.scale;
-
-    this.blinkTimer++;
-    if (this.isBlinking) {
-      if (this.blinkTimer > 4) {
-        this.isBlinking = false;
-        this.blinkTimer = 0;
-      }
-    } else {
-      if (this.blinkTimer > 80 && Math.random() < 0.08) {
-        this.isBlinking = true;
-        this.blinkTimer = 0;
-      }
-    }
   }
 
   getVisibleHeight(matrix) {
@@ -381,7 +430,71 @@ export class NyanCatModel {
     }
   }
 
-  draw(ctx) {
+  drawProceduralTrail(ctx, px, py, secondsElapsed) {
+    const tSettings = this.trailSettings || {
+      enabled: true,
+      spacing: 6,
+      waveType: 'blocky',
+      waveAmplitude: 1,
+      animationDivisor: 4
+    };
+    if (!tSettings.enabled) return;
+
+    const s = this.scale;
+    const defaultSprites = this.defaultSprites || DEFAULT_SPRITES;
+
+    // Resolve partName bound to the TRAIL slot
+    const trailSlotKey = 'TRAIL';
+    const activePartKey = this.bindings ? (this.bindings[trailSlotKey] || 'default') : 'default';
+    let trailSprite = null;
+
+    if (activePartKey && activePartKey !== 'default' && this.customParts && this.customParts[activePartKey]) {
+      trailSprite = this.customParts[activePartKey];
+    } else {
+      const defaultKey = 'RAINBOW_STRIPES';
+      trailSprite = defaultSprites[defaultKey] || DEFAULT_SPRITES[defaultKey];
+    }
+
+    if (!trailSprite) return;
+    const trailMatrix = getSpriteMatrix(trailSprite);
+    const trailColors = getSpriteColors(trailSprite);
+    if (!trailMatrix) return;
+
+    const stampWidth = trailMatrix[0] ? trailMatrix[0].length : 6;
+    const spacing = (activePartKey === 'default' ? stampWidth : (tSettings.spacing || stampWidth)) * s;
+    const waveType = tSettings.waveType || 'blocky';
+    const amp = (tSettings.waveAmplitude !== undefined ? tSettings.waveAmplitude : (waveType === 'blocky' ? 1 : 2)) * s;
+    const freq = tSettings.waveFrequency || 0.025;
+    const speed = tSettings.waveSpeed || 0.4;
+    const div = tSettings.animationDivisor || 4;
+    const frameOffset = secondsElapsed * this.fps;
+
+    const popSprite = defaultSprites.POPTART;
+    const popMatrix = getSpriteMatrix(popSprite);
+    const poptartHeight = popMatrix ? popMatrix.length : 18;
+
+    // Center trail vertically relative to poptart body
+    const centerY = py + (poptartHeight / 2) * s;
+    const endX = px + 1 * s;
+
+    // Draw the stamps loop backwards
+    for (let x = 0; x < endX; x += spacing) {
+      let waveY = 0;
+      if (waveType === 'blocky') {
+        const segmentIndex = Math.floor(x / spacing);
+        const animationStep = Math.floor(frameOffset / div);
+        const isUp = Math.abs((segmentIndex - animationStep) % 2) === 0;
+        waveY = (isUp ? 0 : amp);
+      } else {
+        waveY = Math.sin(x * freq - frameOffset * speed) * amp;
+      }
+      // Subtract half of the trail height (trailMatrix.length) to center the stamp vertically
+      const baseY = centerY - (trailMatrix.length / 2) * s + waveY;
+      this.drawGrid(ctx, trailMatrix, x, baseY, trailColors);
+    }
+  }
+
+  draw(ctx, secondsElapsed = 0) {
     const s = this.scale;
     const frame = this.currentFrame;
     const bob = this.currentBob;
@@ -389,9 +502,14 @@ export class NyanCatModel {
     const px = this.x;
     const py = this.y + bob;
 
+    const defaultSprites = this.defaultSprites || DEFAULT_SPRITES;
+
+    // --- 0. Draw Procedural Trail ---
+    this.drawProceduralTrail(ctx, px, py, secondsElapsed);
+
     // --- 1. Draw Tail ---
     const ta = TAIL_ANIM[frame];
-    const tailSprite = DEFAULT_SPRITES[ta.shape];
+    const tailSprite = defaultSprites[ta.shape];
     const tailMatrix = this.customPartsMapping[ta.shape] || getSpriteMatrix(tailSprite);
     const tailColors = this.getColorsForSlot(ta.shape, tailSprite);
     this.drawGrid(ctx, tailMatrix, px + ta.dx * s, py + ta.dy * s, tailColors);
@@ -400,29 +518,29 @@ export class NyanCatModel {
     const legAnim = LEG_ANIM[frame];
     const legKeys = ['LEG_DOWN', 'LEG_FRONT', 'LEG_BACK'];
     const legXOffsets = [-1, 1, -1, 1];
-    const poptartRows = getSpriteMatrix(DEFAULT_SPRITES.POPTART).length;
+    const poptartRows = getSpriteMatrix(defaultSprites.POPTART).length;
     for (let i = 0; i < 4; i++) {
       const key = legKeys[legAnim[i]];
-      const legSprite = DEFAULT_SPRITES[key];
+      const legSprite = defaultSprites[key];
       const legMatrix = this.customPartsMapping[key] || getSpriteMatrix(legSprite);
       const legColors = this.getColorsForSlot(key, legSprite);
       this.drawGrid(ctx, legMatrix, px + (LEG_DX[i] + legXOffsets[frame]) * s, py + poptartRows * s, legColors);
     }
 
     // --- 3. Draw Pop-Tart Body ---
-    const popSprite = DEFAULT_SPRITES.POPTART;
+    const popSprite = defaultSprites.POPTART;
     const popMatrix = this.customPartsMapping.POPTART || getSpriteMatrix(popSprite);
     const popColors = this.getColorsForSlot('POPTART', popSprite);
     this.drawGrid(ctx, popMatrix, px, py, popColors);
 
     // --- 4. Draw Cat Head ---
-    const activeHeadKey = this.isBlinking ? 'HEAD_BLINK' : 'HEAD_OPEN';
-    const headSprite = DEFAULT_SPRITES[activeHeadKey];
+    const activeHeadKey = 'HEAD_OPEN';
+    const headSprite = defaultSprites[activeHeadKey];
     const headMatrix = this.customPartsMapping[activeHeadKey] || getSpriteMatrix(headSprite);
     const headColors = this.getColorsForSlot(activeHeadKey, headSprite);
-    
+
     const visibleHeadHeight = this.getVisibleHeight(headMatrix);
-    const finalHeadDy = (getSpriteMatrix(DEFAULT_SPRITES.POPTART).length - visibleHeadHeight) + this.headDy;
+    const finalHeadDy = (getSpriteMatrix(defaultSprites.POPTART).length - visibleHeadHeight) + this.headDy;
     const headXOffsets = [-1, 0, 1, 0];
     this.drawGrid(ctx, headMatrix, px + (this.headDx + headXOffsets[frame]) * s, py + finalHeadDy * s, headColors);
   }
@@ -480,58 +598,33 @@ export class SparkleStarfield {
         ctx.fillRect(star.x, star.y, s, s);
       } else if (star.type === 'cross') {
         if (star.twinkleFrame % 2 === 0) {
-          ctx.fillRect(star.x,     star.y,     s, s);
-          ctx.fillRect(star.x - s, star.y,     s, s);
-          ctx.fillRect(star.x + s, star.y,     s, s);
-          ctx.fillRect(star.x,     star.y - s, s, s);
-          ctx.fillRect(star.x,     star.y + s, s, s);
+          ctx.fillRect(star.x, star.y, s, s);
+          ctx.fillRect(star.x - s, star.y, s, s);
+          ctx.fillRect(star.x + s, star.y, s, s);
+          ctx.fillRect(star.x, star.y - s, s, s);
+          ctx.fillRect(star.x, star.y + s, s, s);
         } else {
           ctx.fillRect(star.x, star.y, s, s);
         }
       } else {
         if (star.twinkleFrame < 3) {
-          ctx.fillRect(star.x,       star.y,       s, s);
-          ctx.fillRect(star.x - s,   star.y,       s, s);
-          ctx.fillRect(star.x + s,   star.y,       s, s);
-          ctx.fillRect(star.x,       star.y - s,   s, s);
-          ctx.fillRect(star.x,       star.y + s,   s, s);
-          ctx.fillRect(star.x - 2*s, star.y,       s, s);
-          ctx.fillRect(star.x + 2*s, star.y,       s, s);
-          ctx.fillRect(star.x,       star.y - 2*s, s, s);
-          ctx.fillRect(star.x,       star.y + 2*s, s, s);
+          ctx.fillRect(star.x, star.y, s, s);
+          ctx.fillRect(star.x - s, star.y, s, s);
+          ctx.fillRect(star.x + s, star.y, s, s);
+          ctx.fillRect(star.x, star.y - s, s, s);
+          ctx.fillRect(star.x, star.y + s, s, s);
+          ctx.fillRect(star.x - 2 * s, star.y, s, s);
+          ctx.fillRect(star.x + 2 * s, star.y, s, s);
+          ctx.fillRect(star.x, star.y - 2 * s, s, s);
+          ctx.fillRect(star.x, star.y + 2 * s, s, s);
         } else {
-          ctx.fillRect(star.x,     star.y,     s, s);
-          ctx.fillRect(star.x - s, star.y,     s, s);
-          ctx.fillRect(star.x + s, star.y,     s, s);
-          ctx.fillRect(star.x,     star.y - s, s, s);
-          ctx.fillRect(star.x,     star.y + s, s, s);
+          ctx.fillRect(star.x, star.y, s, s);
+          ctx.fillRect(star.x - s, star.y, s, s);
+          ctx.fillRect(star.x + s, star.y, s, s);
+          ctx.fillRect(star.x, star.y - s, s, s);
+          ctx.fillRect(star.x, star.y + s, s, s);
         }
       }
     });
-  }
-}
-
-// ===================================================================
-// 5. RAINBOW TRAIL
-// ===================================================================
-export class RainbowTrail {
-  draw(ctx, catX, catY, frame, scale, rainbowStyle) {
-    const palette = PALETTES.rainbows[rainbowStyle] || PALETTES.rainbows.classic;
-    const colors = palette.colors;
-    const stripeH = 2 * scale;
-    const segW    = 3 * scale;
-
-    const centerY = catY + (DEFAULT_SPRITES.POPTART.length / 2) * scale;
-    const endX = catX + 1 * scale;
-
-    for (let x = 0; x < endX; x += segW) {
-      const waveY = Math.sin(x * 0.025 - frame * 0.4) * 2 * scale;
-      const baseY = centerY - 6 * scale + waveY;
-
-      for (let i = 0; i < 6; i++) {
-        ctx.fillStyle = colors[i];
-        ctx.fillRect(x, baseY + i * stripeH, segW + 1, stripeH);
-      }
-    }
   }
 }

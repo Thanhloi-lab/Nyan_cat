@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/refs */
 import { useContext, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AppContext } from "../context/AppContext";
-import { DEFAULT_SPRITES, getSpriteMatrix } from "../utils/nyanRenderer";
+import { getSpriteMatrix } from "../utils/nyanRenderer";
 import {
   Plus,
   Trash2,
@@ -38,19 +38,24 @@ export default function ModelAssembler() {
     updateSetting,
     profiles,
     activeProfileId,
+    cloneProfile,
     resolution,
     setResolution,
     loadProfile,
     saveProfile,
     deleteProfile,
     t,
+    saveCustomPart,
     loadedPackages,
     loadPackage,
     unloadPackage,
     deletePackage,
     checkHasUnsavedChanges,
     closeActiveProfile,
+    defaultSprites
   } = useContext(AppContext);
+
+  const isReadOnly = activeProfileId === "system_default";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeLayerId, setActiveLayerId] = useState(null);
@@ -145,7 +150,6 @@ export default function ModelAssembler() {
     const headLayer = layers.find(
       (l) =>
         l.partName === "HEAD_OPEN" ||
-        l.partName === "HEAD_BLINK" ||
         l.partName.toLowerCase().includes("head"),
     );
     const bodyLayer = layers.find(
@@ -172,8 +176,8 @@ export default function ModelAssembler() {
     const customHead = customParts[headLayer.partName];
     if (customHead) {
       headHeight = customHead.height;
-    } else if (DEFAULT_SPRITES[headLayer.partName]) {
-      const headMatrix = getSpriteMatrix(DEFAULT_SPRITES[headLayer.partName]);
+    } else if (defaultSprites && defaultSprites[headLayer.partName]) {
+      const headMatrix = getSpriteMatrix(defaultSprites[headLayer.partName]);
       headHeight = headMatrix ? headMatrix.length : 13;
     }
     const headDy = Math.round(dyPixels / scale) - (18 - headHeight);
@@ -183,27 +187,35 @@ export default function ModelAssembler() {
 
     if (headLayer.partName && headLayer.partName !== "default") {
       bindPartToSlot("HEAD_OPEN", headLayer.partName);
-      bindPartToSlot("HEAD_BLINK", headLayer.partName);
     }
     if (bodyLayer.partName && bodyLayer.partName !== "default") {
       bindPartToSlot("POPTART", bodyLayer.partName);
     }
 
     layers.forEach((layer) => {
-      if (
-        layer.partName &&
-        layer.partName !== "default" &&
-        customParts[layer.partName]
-      ) {
-        if (layer.partName.toLowerCase().includes("tail")) {
-          bindPartToSlot("TAIL_UP", layer.partName);
-          bindPartToSlot("TAIL_MID", layer.partName);
-          bindPartToSlot("TAIL_DOWN", layer.partName);
-        }
-        if (layer.partName.toLowerCase().includes("leg")) {
-          bindPartToSlot("LEG_DOWN", layer.partName);
-          bindPartToSlot("LEG_FRONT", layer.partName);
-          bindPartToSlot("LEG_BACK", layer.partName);
+      if (layer.partName && layer.partName !== "default") {
+        const isCustom = customParts[layer.partName] !== undefined;
+        const isSystem = defaultSprites && defaultSprites[layer.partName] !== undefined;
+        if (isCustom || isSystem) {
+          const nameLower = layer.partName.toLowerCase();
+          if (nameLower.includes("tail")) {
+            bindPartToSlot("TAIL_UP", layer.partName);
+            bindPartToSlot("TAIL_MID", layer.partName);
+            bindPartToSlot("TAIL_DOWN", layer.partName);
+          } else if (nameLower.includes("leg")) {
+            bindPartToSlot("LEG_DOWN", layer.partName);
+            bindPartToSlot("LEG_FRONT", layer.partName);
+            bindPartToSlot("LEG_BACK", layer.partName);
+          } else if (
+            layer.isProceduralTrail ||
+            (layer.isProceduralTrail === undefined && (
+              nameLower.includes("trail") ||
+              nameLower.includes("rainbow") ||
+              nameLower.includes("stripe")
+            ))
+          ) {
+            bindPartToSlot("TRAIL", layer.partName);
+          }
         }
       }
     });
@@ -222,10 +234,86 @@ export default function ModelAssembler() {
     }
   };
 
+  const handlePackageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const payload = JSON.parse(event.target.result);
+        
+        let importedParts = {};
+        let targetPackageName = "Imported Package";
+
+        // Format 1: Standalone package json with { packageName, parts: { ... } }
+        if (payload.packageName && payload.parts) {
+          targetPackageName = payload.packageName;
+          importedParts = payload.parts;
+        } 
+        // Format 2: Full project json containing { customParts, ... }
+        else if (payload.customParts) {
+          importedParts = payload.customParts;
+          const firstPart = Object.values(payload.customParts)[0];
+          targetPackageName = (firstPart && firstPart.package) || "Imported Project";
+        }
+        // Format 3: Simple key-value of parts
+        else if (typeof payload === "object" && !Array.isArray(payload)) {
+          const keys = Object.keys(payload);
+          const looksLikeParts = keys.every(k => payload[k] && (payload[k].matrix || payload[k].data));
+          if (looksLikeParts) {
+            importedParts = payload;
+            const firstPart = Object.values(payload)[0];
+            targetPackageName = (firstPart && firstPart.package) || "Imported Package";
+          } else {
+            throw new Error("Invalid format");
+          }
+        } else {
+          throw new Error("Invalid format");
+        }
+
+        let count = 0;
+        Object.keys(importedParts).forEach((k) => {
+          const part = importedParts[k];
+          const matrix = part.matrix || part.data;
+          if (matrix) {
+            const width = part.width || (matrix[0] ? matrix[0].length : 0);
+            const height = part.height || matrix.length;
+            const pkg = part.package || targetPackageName;
+            
+            saveCustomPart(
+              part.name || k,
+              width,
+              height,
+              matrix,
+              pkg,
+              part.colors || part.palette || null,
+              part.colorLabels || null,
+              part.isAnimationFrameOnly || false
+            );
+            count++;
+          }
+        });
+
+        const successMsg = t("modelAssembler.packageManager.importSuccess", { count, name: targetPackageName }) 
+          || `📥 Đã nạp thành công package "${targetPackageName}" (${count} linh kiện)!`;
+        setToastMessage(successMsg);
+      } catch (err) {
+        console.error(err);
+        const errMsg = t("modelAssembler.packageManager.importError", { error: err.message })
+          || `❌ Lỗi khi nạp package: ${err.message}`;
+        alert(errMsg);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
   // Drag interaction logic
   const handleMouseDown = (e, id, currentX, currentY) => {
     e.stopPropagation();
     setActiveLayerId(id);
+    if (isReadOnly) return;
     setIsDragging(true);
     dragStartPos.current = { x: e.clientX, y: e.clientY };
     layerStartPos.current = { x: currentX, y: currentY };
@@ -287,6 +375,53 @@ export default function ModelAssembler() {
     <div className="assembler-tab-layout">
       {/* Visual Canvas Board Area */}
       <div className="assembler-canvas-container glass-card">
+        {isReadOnly && (
+          <div
+            className="system-profile-warning-banner"
+            style={{
+              background: "rgba(255, 0, 127, 0.1)",
+              borderBottom: "1px solid rgba(255, 0, 127, 0.25)",
+              padding: "10px 20px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "12px",
+              color: "#ff007f",
+              fontSize: "12px",
+              fontWeight: "500",
+              borderRadius: "8px 8px 0 0"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span>⚠️</span>
+              <span>{t("modelAssembler.systemProfile.readOnlyWarning") || "Bạn đang xem Hồ sơ Hệ thống (Chỉ đọc). Hãy Nhân bản hồ sơ này để chỉnh sửa."}</span>
+            </div>
+            <button
+              className="btn btn-primary btn-small"
+              onClick={() => {
+                const name = prompt(t("modelAssembler.systemProfile.cloneNamePrompt") || "Nhập tên cho hồ sơ nhân bản:", `${profiles[activeProfileId]?.name} (Copy)`);
+                if (name) {
+                  const newId = cloneProfile(activeProfileId, name);
+                  if (newId) {
+                    alert(t("modelAssembler.systemProfile.cloneSuccess") || "Đã nhân bản hồ sơ hệ thống thành công!");
+                  }
+                }
+              }}
+              style={{
+                background: "linear-gradient(135deg, #ff007f 0%, #7928ca 100%)",
+                border: "none",
+                color: "#fff",
+                fontWeight: "bold",
+                padding: "4px 10px",
+                borderRadius: "4px",
+                cursor: "pointer",
+                boxShadow: "0 0 8px rgba(255,0,127,0.3)",
+              }}
+            >
+              ➕ {t("modelAssembler.systemProfile.btnCloneAction") || "Nhân bản"}
+            </button>
+          </div>
+        )}
         <div className="editor-card-header">
           <div className="header-meta">
             <span className="card-tag">STUDIO</span>
@@ -467,25 +602,53 @@ export default function ModelAssembler() {
                 <RefreshCw size={11} style={{ marginRight: 4 }} /> {t("modelAssembler.toolbar.btnApply") || "Đồng bộ động"}
               </button>
 
-              <button
-                className="btn btn-primary btn-small flex items-center"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  saveProfile();
-                }}
-                style={{
-                  background:
-                    "linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)",
-                  borderColor: "rgba(0,242,254,0.3)",
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "11px",
-                  padding: "6px 12px",
-                }}
-                title={t("modelAssembler.toolbar.btnSaveTitle") || "Lưu hồ sơ và tầng layer hiện tại"}
-              >
-                <Save size={11} style={{ marginRight: 4 }} /> {t("modelAssembler.toolbar.btnSave") || "Lưu hồ sơ"}
-              </button>
+              {isReadOnly ? (
+                <button
+                  className="btn btn-primary btn-small flex items-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const name = prompt(t("modelAssembler.systemProfile.cloneNamePrompt") || "Nhập tên cho hồ sơ nhân bản:", `${profiles[activeProfileId]?.name} (Copy)`);
+                    if (name) {
+                      const newId = cloneProfile(activeProfileId, name);
+                      if (newId) {
+                        alert(t("modelAssembler.systemProfile.cloneSuccess") || "Đã nhân bản hồ sơ hệ thống thành công!");
+                      }
+                    }
+                  }}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #ff007f 0%, #7928ca 100%)",
+                    borderColor: "rgba(255,0,127,0.3)",
+                    color: "#fff",
+                    fontWeight: "bold",
+                    fontSize: "11px",
+                    padding: "6px 12px",
+                  }}
+                  title={t("modelAssembler.systemProfile.btnCloneActionTitle") || "Nhân bản hồ sơ để chỉnh sửa"}
+                >
+                  <Copy size={11} style={{ marginRight: 4 }} /> {t("modelAssembler.systemProfile.btnCloneAction") || "Nhân bản"}
+                </button>
+              ) : (
+                <button
+                  className="btn btn-primary btn-small flex items-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    saveProfile();
+                  }}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)",
+                    borderColor: "rgba(0,242,254,0.3)",
+                    color: "#000",
+                    fontWeight: "bold",
+                    fontSize: "11px",
+                    padding: "6px 12px",
+                  }}
+                  title={t("modelAssembler.toolbar.btnSaveTitle") || "Lưu hồ sơ và tầng layer hiện tại"}
+                >
+                  <Save size={11} style={{ marginRight: 4 }} /> {t("modelAssembler.toolbar.btnSave") || "Lưu hồ sơ"}
+                </button>
+              )}
             </div>
 
             {/* Background Style Switcher */}
@@ -509,6 +672,16 @@ export default function ModelAssembler() {
                 style={{ fontSize: "10px", padding: "4px 8px" }}
               >
                 Space Blue
+              </button>
+              <button
+                className={`btn btn-secondary btn-small ${background.type === "starfield" ? "active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setBackground({ type: "starfield", value: "" });
+                }}
+                style={{ fontSize: "10px", padding: "4px 8px" }}
+              >
+                🌌 Starfield
               </button>
 
               <label
@@ -621,11 +794,11 @@ export default function ModelAssembler() {
                   width = custom.width;
                   height = custom.height;
                   partPalette = custom.colors || custom.palette;
-                } else if (DEFAULT_SPRITES[partName]) {
-                  partData = getSpriteMatrix(DEFAULT_SPRITES[partName]);
+                } else if (defaultSprites && defaultSprites[partName]) {
+                  partData = getSpriteMatrix(defaultSprites[partName]);
                   height = partData ? partData.length : 0;
                   width = partData && partData[0] ? partData[0].length : 0;
-                  partPalette = DEFAULT_SPRITES[partName].colors || null;
+                  partPalette = defaultSprites[partName].colors || null;
                 }
               }
 
@@ -683,26 +856,58 @@ export default function ModelAssembler() {
         <div className="panel-section">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             <h3 style={{ margin: 0 }}>1. Drag / Add Items to Stage</h3>
-            <button
-              className="btn btn-primary btn-small"
-              onClick={() => {
-                setEditingPartKey(null);
-                setIsDrawingModalOpen(true);
-              }}
-              style={{
-                background: "linear-gradient(135deg, #ff007f 0%, #7928ca 100%)",
-                border: "none",
-                color: "#fff",
-                padding: "4px 10px",
-                borderRadius: "4px",
-                fontSize: "11px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                boxShadow: "0 0 8px rgba(255,0,127,0.3)",
-              }}
-            >
-              {t("modelAssembler.customParts.btnDraw") || "Draw"}
-            </button>
+            <div style={{ display: "flex", gap: "6px" }}>
+              <label 
+                className="btn btn-secondary btn-small cursor-pointer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "11px",
+                  padding: "4px 10px",
+                  gap: "4px",
+                  margin: 0,
+                  height: "26px",
+                  boxSizing: "border-box",
+                  opacity: isReadOnly ? 0.5 : 1,
+                  cursor: isReadOnly ? "not-allowed" : "pointer",
+                  pointerEvents: isReadOnly ? "none" : "auto"
+                }}
+              >
+                <Upload size={12} /> {t("modelAssembler.packageManager.import") || "Nạp Package"}
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handlePackageUpload}
+                  style={{ display: "none" }}
+                  disabled={isReadOnly}
+                />
+              </label>
+              <button
+                className="btn btn-primary btn-small"
+                onClick={() => {
+                  if (isReadOnly) return;
+                  setEditingPartKey(null);
+                  setIsDrawingModalOpen(true);
+                }}
+                disabled={isReadOnly}
+                style={{
+                  background: isReadOnly ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #ff007f 0%, #7928ca 100%)",
+                  border: isReadOnly ? "1px solid rgba(255,255,255,0.1)" : "none",
+                  color: isReadOnly ? "#666" : "#fff",
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  cursor: isReadOnly ? "not-allowed" : "pointer",
+                  boxShadow: isReadOnly ? "none" : "0 0 8px rgba(255,0,127,0.3)",
+                  height: "26px",
+                  boxSizing: "border-box"
+                }}
+              >
+                {t("modelAssembler.customParts.btnDraw") || "Draw"}
+              </button>
+            </div>
           </div>
 
           {/* Search bar */}
@@ -740,7 +945,7 @@ export default function ModelAssembler() {
                   return nameMatch || keyMatch || pkgMatch;
                 });
 
-                const filteredDefaultKeys = Object.keys(DEFAULT_SPRITES).filter((key) => {
+                const filteredDefaultKeys = Object.keys(defaultSprites || {}).filter((key) => {
                   const keyMatch = key.toLowerCase().includes(searchQuery.toLowerCase());
                   const nameMatch = key.toLowerCase().replace(/_/g, " ").includes(searchQuery.toLowerCase());
                   return keyMatch || nameMatch;
@@ -813,7 +1018,7 @@ export default function ModelAssembler() {
                             <h4>🐱 System Sprites</h4>
                             <div className="source-parts-grid">
                               {filteredDefaultKeys.map((key) => {
-                                const grid = DEFAULT_SPRITES[key];
+                                const grid = defaultSprites[key];
                                 const matrix = getSpriteMatrix(grid);
                                 const defColors = grid && !Array.isArray(grid) ? grid.colors : null;
                                 return (
@@ -879,16 +1084,21 @@ export default function ModelAssembler() {
                         <span className="card-tag">SYSTEM</span>
                       </h4>
                       <div className="source-parts-grid">
-                        {Object.keys(DEFAULT_SPRITES).map((key) => {
-                          const sprite = DEFAULT_SPRITES[key];
-                          const matrix = getSpriteMatrix(sprite);
-                          const defColors = sprite && !Array.isArray(sprite) ? sprite.colors : null;
+                        {Object.keys(defaultSprites || {}).map((key) => {
+                          let sprite = defaultSprites[key];
+                          let matrix = getSpriteMatrix(sprite);
+                          let defColors = sprite && !Array.isArray(sprite) ? sprite.colors : null;
+                          if (key === 'RAINBOW_STRIPES') {
+                            console.log(sprite)
+                            console.log(matrix)
+                            console.log(defColors)
+                          }
                           return (
                             <div key={key} className="part-add-card" style={{ display: "flex", flexDirection: "column" }}>
                               <div
                                 className="part-card-preview-area"
                                 onClick={() => {
-                                  const newId = addLayer(key);
+                                  let newId = addLayer(key);
                                   if (newId) setActiveLayerId(newId);
                                 }}
                                 style={{ width: "100%", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", height: "45px" }}
@@ -936,8 +1146,29 @@ export default function ModelAssembler() {
                     return (
                       <div key={pkg} className="source-category" style={{ marginBottom: "16px" }}>
                         <h4 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "0 0 8px 0" }}>
-                          <span>📦 {pkg}</span>
-                          <span className="card-tag">CUSTOM</span>
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, marginRight: "8px" }}>📦 {pkg}</span>
+                          <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                            <button
+                              className="btn btn-secondary btn-small"
+                              onClick={() => unloadPackage(pkg)}
+                              style={{ padding: "1px 6px", fontSize: "9px", height: "18px", display: "flex", alignItems: "center" }}
+                              title={t("modelAssembler.packageManager.unload") || "Unload"}
+                            >
+                              {t("modelAssembler.packageManager.unload") || "Unload"}
+                            </button>
+                            <button
+                              className="btn btn-danger btn-small"
+                              onClick={() => {
+                                if (window.confirm(t("modelAssembler.packageManager.confirmDelete", { name: pkg }) || `Xóa vĩnh viễn package "${pkg}" và tất cả linh kiện bên trong?`)) {
+                                  deletePackage(pkg);
+                                }
+                              }}
+                              style={{ padding: "1px 6px", fontSize: "9px", height: "18px", background: "#ff0055", border: "none", color: "#fff", display: "flex", alignItems: "center" }}
+                              title="Delete package"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         </h4>
                         {partsInPkgKeys.length === 0 ? (
                           <div style={{ fontSize: "10px", color: "#666", textAlign: "center", padding: "8px 0" }}>
@@ -996,6 +1227,35 @@ export default function ModelAssembler() {
                       </div>
                     );
                   })}
+
+                  {(() => {
+                    const allCustomPackages = Array.from(
+                      new Set(Object.values(customParts).map((p) => p.package || "My Custom"))
+                    );
+                    const unloadedCustomPackages = allCustomPackages.filter(
+                      (pkg) => !loadedPackages.includes(pkg)
+                    );
+                    if (unloadedCustomPackages.length === 0) return null;
+                    return (
+                      <div style={{ marginTop: "16px", borderTop: "1px dashed rgba(255,255,255,0.1)", paddingTop: "12px" }}>
+                        <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", display: "block", marginBottom: "8px" }}>
+                          {t("modelAssembler.packageManager.title") || "Quản Lý Packages"} - Unloaded:
+                        </span>
+                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                          {unloadedCustomPackages.map((pkg) => (
+                            <button
+                              key={pkg}
+                              className="btn btn-secondary btn-small"
+                              onClick={() => loadPackage(pkg)}
+                              style={{ fontSize: "10px", padding: "4px 8px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", cursor: "pointer" }}
+                            >
+                              ➕ {pkg}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })()}
@@ -1008,6 +1268,7 @@ export default function ModelAssembler() {
           activeLayerId={activeLayerId}
           resolution={resolution}
           updateLayer={updateLayer}
+          activeProfileId={activeProfileId}
         />
 
         {/* Segment 3: Layers stack hierarchy */}
@@ -1018,6 +1279,7 @@ export default function ModelAssembler() {
           deleteLayer={deleteLayer}
           duplicateLayer={duplicateLayer}
           reorderLayer={reorderLayer}
+          activeProfileId={activeProfileId}
         />
       </div>
 
